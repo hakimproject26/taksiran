@@ -1,0 +1,7 @@
+# Data peribadi — nama pembayar, event, rekod kiraan.
+# Jangan sekali-kali masuk git.
+data/
+
+# Sisa Python
+__pycache__/
+*.pyc
