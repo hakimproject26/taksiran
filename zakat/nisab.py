@@ -18,6 +18,12 @@ from datetime import date
 # Bulan pertama setiap suku.
 BULAN_SUKU = (1, 4, 7, 10)
 
+# Tahun paling awal yang app uruskan. Nisab berubah setiap tahun (ia ikut
+# harga emas), jadi kiraan qadha mesti menilai setiap tahun dengan nisab
+# tahun itu — bukan dengan nisab hari ini. Nama ini milik domain, sebab itu
+# ia di sini dan bukan dalam store.py (yang hanya tahu baca/tulis fail).
+TAHUN_MULA = 2015
+
 
 def suku_terkini(hari_ini=None):
     """Tarikh mula suku yang sedang berjalan.
@@ -70,3 +76,31 @@ def mesej_ringkas(cfg, hari_ini=None):
         return "Nisab belum pernah dikemas kini — sahkan dengan pihak zakat."
     return (f"Nisab kali terakhir dikemas kini "
             f"{terakhir.strftime('%d/%m/%Y')} — dah lebih satu suku.")
+
+
+# ------------------------------------------------------- nisab ikut tahun
+
+def senarai_tahun(hari_ini=None):
+    """Semua tahun yang app uruskan — TAHUN_MULA hingga tahun semasa."""
+    h = hari_ini or date.today()
+    return list(range(TAHUN_MULA, h.year + 1))
+
+
+def untuk_tahun(cfg, jadual, tahun, hari_ini=None):
+    """Nisab bagi satu tahun tertentu, atau None kalau belum diisi.
+
+    Satu kebenaran bagi SETIAP tahun — bukan dua salinan yang dicermin:
+
+      * Tahun SEMASA dibaca daripada cfg["nisab"]. Itulah nilai yang
+        disunting di menu Kadar, dan yang dipakai oleh kiraan harian.
+      * Tahun LAIN dibaca daripada jadual tahunan.
+
+    Sync dua hala sengaja tidak dibuat. Ia akan merosakkan [R] reset
+    (yang tidak menyentuh jadual tahun), dan menyunting tahun lama boleh
+    menandakan nisab_dikemas — memadamkan peringatan suku yang sebenarnya
+    masih belum lulus.
+    """
+    h = hari_ini or date.today()
+    if tahun == h.year:
+        return cfg.get("nisab")
+    return jadual.get(str(tahun))

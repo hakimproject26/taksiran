@@ -12,6 +12,57 @@ Ukurannya bukan berapa banyak kerja, tapi berapa besar kesannya pada pengguna.
 
 ---
 
+## [2.0.0] — 18/09/2026
+
+Qadha Zakat — kira zakat tertunggak merentas banyak tahun, dengan nisab
+setiap tahun.
+
+**Ditambah:**
+
+- **Menu [3] Qadha Zakat ▸ [1] Kiraan Bundle** — kira beberapa tahun
+  sekali gus, dan dapatkan satu jumlah yang perlu dibayar. Boleh pilih
+  Kaedah A atau B, seperti kiraan biasa
+- **Nisab ikut tahun.** Setiap tahun dinilai dengan nisab TAHUN ITU,
+  bukan dengan nisab hari ini. Ini penting: harga emas berubah, jadi
+  gaji 2015 yang dinilai dengan nisab 2026 akan salah pada kedua-dua
+  hujungnya — tahun lama nampak tak wajib padahal wajib, dan tahun baru
+  nampak wajib lebih awal daripada sepatutnya
+- **`[7] Kadar & Tolakan ▸ [T]`** — senarai nisab 2015 hingga tahun
+  semasa. Taip tahun untuk isi atau ubah. Tahun kosong jelas kelihatan
+- Pemilihan tahun dalam bundle: **[1] Julat** (dari tahun ke tahun) atau
+  **[2] Manual** (taip tahun satu-satu; taip tahun yang sudah ada akan
+  membuangnya)
+- **Paparan semak** sebelum kiraan dijalankan — setiap tahun berdiri
+  sendiri, jadi angka yang tersalah taip kelihatan sebelum ia menjadi
+  sebahagian daripada jumlah besar
+- Tolakan diisi **sekali**, dipakai semua tahun; boleh diubah bagi tahun
+  tertentu sahaja
+- Cetakan qadha: satu jadual per tahun + jumlah keseluruhan, dengan
+  baris kepala dipagari garis atas dan bawah
+
+**Berubah — inilah sebabnya MAJOR:**
+
+- **Menu utama bernombor semula.** `[3]` sekarang Qadha Zakat, dan
+  Kadar & Tolakan pindah ke `[7]`. Kalau tuan biasa menekan `[3]` untuk
+  membuka Kadar & Tolakan, ia kini membawa ke skrin yang berbeza
+
+**Tidak berubah:**
+
+- Rekod sejarah lama tiada penanda jenis, jadi ia tetap dianggap kiraan
+  biasa — cetakan semulanya sama seperti asalnya
+- `data/config.json` dan `data/sejarah.json` kekal boleh dibaca
+
+**Fail baharu:** `data/nisab.json` — nisab bagi tahun-tahun lalu. Tahun
+semasa kekal dalam `data/config.json` seperti biasa; tiada cermin antara
+keduanya, supaya `[R] reset` tak memadamkan jadual tahun. Fail ini masuk
+ke dalam eksport data.
+
+**Nota:** tahun lain **kosong** — app tidak mereka angka nisab. Ia angka
+agama dan kewangan yang berbeza ikut negeri dan harga emas, jadi ia
+mesti datang daripada tuan atau pihak zakat.
+
+---
+
 ## [1.2.1] — 17/09/2026
 
 Nisab dinilai pada pendapatan kasar, bukan pada asas selepas tolakan.

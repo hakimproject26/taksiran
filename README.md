@@ -1,10 +1,11 @@
 # Taksiran Zakat Pendapatan
 
-**Versi 1.2.1** (17/09/2026)
+**Versi 2.0.0** (18/09/2026)
 
 Kalkulator zakat pendapatan berasaskan terminal untuk Termux (Android).
 
-Dua kaedah kiraan, dan boleh keluarkan teks siap untuk dihantar ke WhatsApp.
+Dua kaedah kiraan, kiraan qadha merentas banyak tahun, dan boleh
+keluarkan teks siap untuk dihantar ke WhatsApp.
 
 ---
 
@@ -66,24 +67,28 @@ Menu utama dibahagi dua kumpulan:
   ── KIRAAN ─────────────────
   [1]  Kira Zakat
   [2]  Daftar
-  [3]  Kadar & Tolakan
+  [3]  Qadha Zakat
   [5]  Sejarah Kiraan
 
   ── APP ────────────────────
   [4]  Tetapan
   [6]  Kemas Kini
+  [7]  Kadar & Tolakan
 ```
 
 **KIRAAN** ialah kerja harian — mengira dan mencetak. **APP** ialah urusan
-app itu sendiri — tetapan, dan mengemas kini dirinya. Nombor menu tidak
-berubah; cuma susunannya diasingkan.
+app itu sendiri — tetapan, dan mengemas kini dirinya.
 
-### 1. Daftar (pilihan)
+> **Nombor menu berubah pada 2.0.0.** `[3]` dulu Kadar & Tolakan; sekarang
+> ia Qadha Zakat. Kadar & Tolakan pindah ke `[7]`, dan masuk kumpulan APP
+> sebab ia tetapan, bukan kerja harian.
+
+### Daftar (pilihan) — `[2]`
 
 Isi nama event, tarikh, dan tempat. Info ini akan naik pada setiap print.
 Kalau tak diisi, print tetap keluar tanpa blok event.
 
-### 2. Kadar & Tolakan
+### Kadar & Tolakan — `[7]`
 
 Semua nilai boleh diubah di sini. **Nisab mesti dikemas kini** ikut harga
 emas semasa dan negeri masing-masing — nilai lalai hanyalah placeholder.
@@ -106,19 +111,42 @@ Amaran muncul di tiga tempat:
 | Skrin hasil | Satu baris kuning di bawah kiraan |
 | Sebelum cetak | Boleh dibatalkan sebelum teks keluar |
 
-Untuk membersihkan amaran: sahkan nisab negeri tuan, kemas kini nilai
-`[3] Nisab` kalau ia berubah, kemudian tekan **[N]** untuk tanda sudah
-disahkan. Nisab selalunya tidak berubah, jadi `[N]` ada supaya tuan tak
-perlu menaip nilai yang sama semula.
+Untuk membersihkan amaran: sahkan nisab negeri tuan, kemas kini **medan
+`[3] Nisab`** dalam menu ini kalau ia berubah, kemudian tekan **[N]**
+untuk tanda sudah disahkan. Nisab selalunya tidak berubah, jadi `[N]` ada
+supaya tuan tak perlu menaip nilai yang sama semula.
 
 Tarikh pengesahan terakhir tertera dalam kotak menu ini.
+
+#### Nisab ikut tahun — `[T]`
+
+Menu ini memaparkan nisab **tahun semasa** sahaja. Untuk tahun-tahun lain,
+tekan `[T]` — senarai nisab 2015 hingga tahun semasa akan naik, dan tuan
+boleh taip mana-mana tahun untuk mengisi atau mengubah nilainya.
+
+Tahun yang belum diisi jelas kelihatan sebagai `(belum diisi)`. Kiraan
+qadha **memerlukan** nisab tahun itu — ia tidak akan meneka.
+
+Dua perkara yang berbeza berlaku di sini:
+
+| Tahun | Disimpan ke | Kesan pada peringatan suku |
+|---|---|---|
+| Tahun semasa | `data/config.json` | Ditanda sudah disahkan semula |
+| Tahun-tahun lalu | `data/nisab.json` | Tiada — peringatan itu mengenai nisab semasa |
+
+Satu nilai sahaja bagi setiap tahun. Tiada salinan cermin antara kedua-
+dua fail, supaya `[R] reset` tidak memadamkan senarai nisab tahun lalu.
+
+> **App tidak mereka angka nisab.** Nisab berbeza ikut negeri dan harga
+> emas, dan ia angka agama serta kewangan. Tuan atau pihak zakat yang
+> menentukannya — app hanya menyimpan apa yang tuan isi.
 
 **Cetakan WhatsApp sengaja tidak diberi amaran nisab.** Setiap gaya
 cetakan ada had aksara yang ketat (30–34), dan baris tambahan akan
 terpotong atau merosakkan susun atur. Amaran diberi dalam app sebelum
 cetak — di situ ia masih boleh dibatalkan.
 
-### 3. Tetapan — gaya output print
+### Tetapan — gaya output print  `[4]`
 
 WhatsApp guna **font berkadar**, bukan monospace. Jadi penjajaran lajur
 hanya kekal kalau teks dibalut dalam blok ` ``` `. Sebab itu ada enam gaya:
@@ -169,7 +197,7 @@ yang masih tergantung.
 
 Teksnya ada dalam `zakat/readme.py`.
 
-### 4. Kira Zakat
+### Kira Zakat — `[1]`
 
 **Kaedah A** — tanpa tolakan:
 
@@ -241,7 +269,7 @@ Kes kedua itulah yang dibetulkan pada 1.2.1.
 Kalau pilih Kaedah A, hasil menunjuk Kaedah A sahaja.
 Kalau pilih Kaedah B, hasil menunjuk **kedua-dua** Kaedah A dan B.
 
-### 5. Print
+### Print
 
 Tekan `P` pada skrin hasil. Boleh isi nama pembayar — kalau dibiarkan
 kosong, print keluar tanpa nama. Teks siap disalin ke clipboard (kalau
@@ -249,7 +277,88 @@ kosong, print keluar tanpa nama. Teks siap disalin ke clipboard (kalau
 
 **Setiap print auto-simpan ke sejarah** — termasuk nama pembayar dan event.
 
-### 6. Sejarah Kiraan
+### Qadha Zakat — `[3]`
+
+Untuk kes tertunggak: seseorang tidak tahu pendapatannya sudah melepasi
+nisab, dan baru sekarang datang dengan gaji setiap tahun untuk dikira.
+
+`[1] Kiraan Bundle` mengira beberapa tahun sekali gus dan memberi **satu
+jumlah** yang perlu dibayar.
+
+**Kenapa ia berasingan daripada kiraan biasa.** Nisab berubah setiap
+tahun — ia ikut harga emas. Kiraan biasa memakai satu nisab, iaitu nisab
+hari ini. Kalau gaji 2015 dinilai dengan nisab 2026, keputusannya salah
+pada kedua-dua hujung:
+
+| Keadaan | Kalau nisab hari ini dipakai | Yang sepatutnya |
+|---|---|---|
+| Nisab 2015 lebih rendah | Gaji 2015 nampak tak cukup nisab | Wajib — orang terlepas bayar |
+| Nisab 2015 lebih tinggi | Gaji 2015 nampak cukup nisab | Tidak wajib — orang bayar lebih |
+
+Sebab itu kiraan bundle menilai **setiap tahun dengan nisab tahun itu**,
+dan ia berhenti kalau nisab mana-mana tahun belum diisi.
+
+**Aliran soalan:**
+
+```
+kaedah A/B  →  tolakan (B sahaja, sekali)  →  kadar  →
+input bulanan/tahunan (sekali)  →  pilih tahun  →  isi gaji  →
+semak  →  kira
+```
+
+- **Tolakan** ditanya **sekali** dan dipakai semua tahun. Ia boleh diubah
+  bagi tahun tertentu sahaja — tekan `[T]` dalam senarai tahun.
+- **Input bulanan atau tahunan** juga ditanya sekali. Kalau pilih bulanan,
+  senarai tahun menunjukkan `RM 3,000 × 12 = RM 36,000` supaya jelas apa
+  yang masuk ke dalam kiraan.
+- **Pemilihan tahun** ada dua cara: `[1] Julat` (2018 hingga 2021) atau
+  `[2] Manual` (taip tahun satu-satu). Dalam mod manual, taip tahun yang
+  sudah ada akan **membuangnya** — supaya tersilap pun boleh dibaiki.
+
+**Paparan semak** naik sebelum kiraan berjalan. Setiap tahun berdiri
+sendiri, dan jumlah tolakan dipaparkan, supaya satu angka yang tersalah
+taip kelihatan sebelum ia menjadi sebahagian daripada jumlah besar.
+
+Tahun yang dipilih tetapi belum diisi akan **dilangkau**, dan ia
+dinyatakan dalam skrin semak. Tahun yang **nisabnya** belum diisi pula
+menghalang kiraan — bukan dilangkau secara senyap.
+
+**Cetakan qadha** lain bentuknya daripada cetakan biasa: satu jadual per
+tahun, satu jumlah di bawahnya.
+
+```
+QADHA ZAKAT — RINGKASAN
+Tahun: 2015 – 2026 (Masihi)
+Kadar: 2.577%
+Kaedah: B (dengan tolakan)
+
+Semua nilai dalam RM,
+dibundarkan ke ringgit terdekat.
+─────────────────────────────────
+TAHUN     KASAR    NISAB    ZAKAT
+─────────────────────────────────
+2015     36,000   13,644      928
+...
+Tahun tak cukup nisab: 2018
+  (dikecualikan dari jumlah)
+Jumlah zakat        RM 25,893
+```
+
+Baris kepala dipagari garis atas dan bawah. Ini **pengganti bold**: di
+dalam blok monospace WhatsApp, `*TAHUN*` tidak menjadi tebal — asterisk
+keluar sebagai aksara biasa, dan setiap sel bertambah dua aksara sehingga
+penjajaran runtuh. Garis tidak menambah lebar, jadi had 34 aksara kekal.
+
+Tahun di bawah nisab **tetap dipaparkan dengan angkanya** (doktrin yang
+sama seperti 1.2.1 — angka sebenar, bukan RM 0.00), tetapi ia
+**dikecualikan daripada jumlah**, dan nota itu diletak betul-betul di
+sebelah jumlah supaya ketak-tambahan itu dijelaskan di tempat ia
+disedari.
+
+Rekod qadha masuk ke sejarah seperti biasa, tetapi dipaparkan sebagai
+`QADHA 2015 – 2026   RM 25,893` — bukan satu blok bagi setiap tahun.
+
+### Sejarah Kiraan — `[5]`
 
 Senarai 20 kiraan terkini. Taip **nombor rekod** untuk print semula.
 Cetakan semula keluar penuh dengan pecahan tolakan asal, dan guna gaya
@@ -257,7 +366,7 @@ output yang sedang aktif.
 
 Cetakan semula **tidak** menambah rekod baru ke sejarah.
 
-### 7. Kemas Kini
+### Kemas Kini — `[6]`
 
 Menu **[6] Kemas Kini** mengemas kini app dari dalam app sendiri — tak perlu
 buka terminal dan taip `curl` lagi.
@@ -304,7 +413,7 @@ cd ~/serve-zakat && python3 -m http.server 8000 --bind 0.0.0.0 --directory .
 > menjalankannya. Untuk pelayan dalam rangkaian sendiri ini memadai. Kalau
 > ia diletak di internet, ini lubang sebenar dan perlu difikir semula.
 
-### 8. Eksport data
+### Eksport data — `Tetapan ▸ [5]`
 
 `Tetapan ▸ [5] Eksport data` menulis **semua** tetapan, event dan rekod
 sejarah ke satu fail teks yang boleh dibaca manusia — bukan JSON mentah,
@@ -340,14 +449,16 @@ taksiran/
 │   ├── ui.py            kotak, warna, input
 │   ├── store.py         baca/tulis JSON
 │   ├── kira.py          enjin kiraan
+│   ├── qadha.py         enjin kiraan qadha (nisab ikut tahun)
 │   ├── cetak.py         jana teks WhatsApp
 │   ├── readme.py        catatan pembinaan
 │   ├── kemas.py         enjin kemas kini
-│   ├── nisab.py         peringatan suku nisab
+│   ├── nisab.py         peringatan suku + nisab ikut tahun
 │   ├── eksport.py       eksport data ke teks
 │   └── versi.py         nombor versi
 ├── data/                terhasil sendiri
-│   ├── config.json      kadar, nisab, tolakan
+│   ├── config.json      kadar, nisab tahun semasa, tolakan
+│   ├── nisab.json       nisab tahun-tahun lalu
 │   ├── event.json       event aktif
 │   └── sejarah.json     rekod kiraan
 └── .backup/             kod versi lama, sebelum ditimpa

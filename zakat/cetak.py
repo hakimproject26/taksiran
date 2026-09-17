@@ -11,10 +11,11 @@ berlanggar dinding tepi. Semua gaya di sini dihadkan kepada
 LEBAR_MAKS aksara.
 """
 
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from . import store
 from .kira import Tolakan, kira_kaedah_a, kira_kaedah_b
+from .qadha import jumlah, tahun_tak_cukup
 from .ui import rm, rm_pendek
 
 # Siling lebar untuk mana-mana satu baris dalam blok monospace.
@@ -426,6 +427,108 @@ def _menegak(hs, ev, nama, label_tahun, tarikh):
     for h in hs:
         pasang(f"Kaedah {h.kaedah} setahun", rm_pendek(h.zakat_setahun))
         pasang(f"Kaedah {h.kaedah} sebulan", rm_pendek(h.zakat_sebulan))
+    L.append("")
+    L.append(f"Dikira pada {tarikh}")
+    return _blok(L)
+
+
+# --------------------------------------------------------------- qadha
+
+# Jadual qadha: TAHUN, KASAR, NISAB, ZAKAT. Lebarnya 33 aksara — satu di
+# bawah LEBAR_MAKS, sebab aksara lebar pernah mengejutkan sebelum ini.
+_JADUAL = "{:<6}{:>9}{:>9}{:>9}"
+_LEBAR_JADUAL = 33
+
+
+def _ribu(nilai):
+    """'13644.28' -> '13,644'.
+
+    Jadual ini ruangnya sempit, jadi sen dibuang. Pembundaran dinyatakan
+    sekali di kepala jadual supaya jumlah di bawahnya tidak kelihatan
+    seperti salah tambah.
+    """
+    d = Decimal(str(nilai)).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+    return f"{d:,.0f}"
+
+
+def _pecah_senarai(item, lebar):
+    """Susun item jadi baris 'a, b, c' yang muat dalam `lebar`."""
+    baris, semasa = [], ""
+    for x in item:
+        calon = x if not semasa else semasa + ", " + x
+        if len(calon) > lebar and semasa:
+            baris.append(semasa)
+            semasa = x
+        else:
+            semasa = calon
+    if semasa:
+        baris.append(semasa)
+    return baris
+
+
+def qadha(baris, ev, nama, kaedah, tarikh):
+    """Cetakan qadha — satu jadual, satu jumlah.
+
+    Bentuknya jauh berbeza daripada cetakan biasa: tiada tolakan
+    dibentangkan (ia sama bagi setiap tahun), dan tiada "sebulan" (tiada
+    makna dalam penyelesaian tunggakan). Yang penting di sini ialah
+    setiap tahun dinilai dengan nisab TAHUN ITU, dan jumlahnya hanya
+    mengira tahun yang cukup nisab.
+
+    Sengaja TIDAK dimasukkan ke dalam _PETA: gaya cetakan pilihan
+    pengguna tidak sepatutnya boleh menghalakan kiraan qadha ke pencetak
+    biasa, yang akan membentangkan dua belas blok kaedah berturutan.
+
+    Wang tidak pernah melalui _potong — memotong '1,234,567' jadi
+    '1,234,5…' membaca sebagai nombor yang berbeza.
+    """
+    if not baris:
+        return _blok(["QADHA ZAKAT", "", "(tiada tahun dikira)"])
+
+    kadar = baris[0][1].kadar
+    tahun = [t for t, _ in baris]
+    julat = (f"{tahun[0]}" if len(tahun) == 1
+             else f"{tahun[0]} – {tahun[-1]}")
+
+    L = ["QADHA ZAKAT — RINGKASAN"]
+    if ev.get("nama"):
+        L.append(_potong(ev["nama"]))
+    if nama:
+        L.append(_potong(f"Nama : {nama}"))
+    L.append(f"Tahun: {julat} (Masihi)")
+    L.append(f"Kadar: {kadar:.3f}%")
+    L.append("Kaedah: A (tanpa tolakan)" if kaedah == "A"
+             else "Kaedah: B (dengan tolakan)")
+    L.append("")
+    L.append("Semua nilai dalam RM,")
+    L.append("dibundarkan ke ringgit terdekat.")
+    # Kepala dipagari garis atas dan bawah. Ini pengganti "bold": di
+    # dalam blok monospace WhatsApp, *TAHUN* keluar sebagai aksara
+    # biasa — bukan tebal — dan setiap sel bertambah dua aksara,
+    # meruntuhkan penjajaran.
+    L.append("─" * _LEBAR_JADUAL)
+    L.append(_JADUAL.format("TAHUN", "KASAR", "NISAB", "ZAKAT"))
+    L.append("─" * _LEBAR_JADUAL)
+    for t, h in baris:
+        L.append(_JADUAL.format(t, _ribu(h.pendapatan_kasar),
+                                _ribu(h.nisab), _ribu(h.zakat_setahun)))
+    L.append("─" * _LEBAR_JADUAL)
+
+    # Nota diletak betul-betul di sebelah jumlah, sebab di situlah
+    # pembaca akan mengesani yang barisnya tak berjumlah.
+    tak_cukup = tahun_tak_cukup(baris)
+    if tak_cukup:
+        label = "Tahun tak cukup nisab: "
+        senarai = ", ".join(str(t) for t in tak_cukup)
+        if len(label + senarai) <= LEBAR_MAKS:
+            L.append(label + senarai)
+        else:
+            L.append("Tahun tak cukup nisab:")
+            for b in _pecah_senarai([str(t) for t in tak_cukup],
+                                    LEBAR_MAKS - 2):
+                L.append("  " + b)
+        L.append("  (dikecualikan dari jumlah)")
+    L.append(f"{'Jumlah zakat':<20}RM {_ribu(jumlah(baris))}")
     L.append("")
     L.append(f"Dikira pada {tarikh}")
     return _blok(L)

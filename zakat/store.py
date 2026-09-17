@@ -61,6 +61,22 @@ def reset_config():
     return dict(CONFIG_LALAI)
 
 
+def jadual_nisab():
+    """Nisab ikut tahun — {"2015": 13644, ...}.
+
+    Kunci ialah tahun sebagai teks, sebab JSON menjadikan kunci objek
+    sebagai teks juga. Tahun SEMASA tiada di sini: ia dibaca daripada
+    cfg["nisab"]. Lihat zakat/nisab.py — satu kebenaran bagi setiap
+    tahun, bukan dua salinan yang dicermin.
+    """
+    d = baca("nisab.json", {})
+    return d if isinstance(d, dict) else {}
+
+
+def simpan_jadual_nisab(d):
+    tulis("nisab.json", d)
+
+
 def event():
     return baca("event.json", {})
 

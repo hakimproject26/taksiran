@@ -13,7 +13,8 @@ import os
 import subprocess
 from datetime import datetime
 
-from . import cetak, nisab, versi
+from . import cetak, nisab, qadha, versi
+from .kira import Hasil
 
 GARIS = "=" * 62
 SUB = "-" * 62
@@ -71,8 +72,36 @@ def _satu_hasil(h):
     return L
 
 
-def jana(cfg, ev, rekod, hari_ini=None):
-    """Hasilkan teks eksport penuh."""
+def _satu_qadha(h):
+    """Satu tahun dalam rekod qadha — ringkas, sebab ia berulang."""
+    L = [_baris(f"  Tahun {h.get('tahun', '?')}",
+                _duit(h.get("zakat_setahun", 0)))]
+    L.append(_baris("    Pendapatan kasar", _duit(h.get("pendapatan_kasar", 0))))
+    L.append(_baris("    Nisab tahun itu", _duit(h.get("nisab", 0))))
+    L.append("      " + ("cukup nisab" if h.get("cukup_nisab")
+                         else "TAK cukup nisab"))
+    return L
+
+
+def _jumlah_qadha(hasil):
+    """Jumlah wajib bagi satu senarai entri hasil qadha.
+
+    Guna peraturan yang sama seperti skrin hasil — hanya tahun yang cukup
+    nisab. Menyalin peraturan itu ke sini bermakna dua tempat boleh
+    menyimpang, dan fail backup akan menunjukkan jumlah yang berbeza
+    daripada app.
+    """
+    return qadha.jumlah([(h.get("tahun"), Hasil.dari_rekod(h)) for h in hasil])
+
+
+def jana(cfg, ev, rekod, jadual=None, hari_ini=None):
+    """Hasilkan teks eksport penuh.
+
+    `jadual` ialah nisab ikut tahun. Ia mesti masuk eksport: menjelang
+    2026 mungkin ada sepuluh tahun angka yang dimasukkan dengan tangan,
+    dan itulah bahagian yang paling sukar dibina semula.
+    """
+    jadual = jadual or {}
     kini = hari_ini or datetime.now()
     L = [
         GARIS,
@@ -107,6 +136,16 @@ def jana(cfg, ev, rekod, hari_ini=None):
     L.append(_baris("Sumber kemas kini", cfg.get("sumber_kemas", "") or "(kosong)"))
     L.append("")
 
+    L.append("NISAB IKUT TAHUN")
+    L.append(SUB)
+    semasa = kini.year
+    for t in nisab.senarai_tahun(kini.date()):
+        nilai = nisab.untuk_tahun(cfg, jadual, t, kini.date())
+        label = f"{t}" + (" (semasa)" if t == semasa else "")
+        L.append(_baris(label, _duit(nilai) if nilai is not None
+                        else "(belum diisi)"))
+    L.append("")
+
     L.append("EVENT AKTIF")
     L.append(SUB)
     if ev.get("nama"):
@@ -134,9 +173,23 @@ def jana(cfg, ev, rekod, hari_ini=None):
         if r.get("tahun"):
             L.append(f"    Tahun: {r['tahun']}")
         L.append("")
-        for h in r.get("hasil", []):
-            L.extend(_satu_hasil(h))
+
+        if r.get("jenis") == "qadha":
+            # Setiap tahun dinilai dengan nisab tahun itu, jadi nisabnya
+            # mesti dicetak bersama — kalau tidak, jumlahnya tak boleh
+            # disemak semula tanpa membuka app.
+            L.append(f"    QADHA — Kaedah {r.get('kaedah', '?')}, "
+                     f"{len(r.get('hasil', []))} tahun")
             L.append("")
+            for h in r.get("hasil", []):
+                L.extend(_satu_qadha(h))
+            L.append("")
+            L.append(_baris("  JUMLAH WAJIB",
+                            _duit(_jumlah_qadha(r.get("hasil", [])))))
+        else:
+            for h in r.get("hasil", []):
+                L.extend(_satu_hasil(h))
+                L.append("")
         L.append(SUB)
 
     L.append("")

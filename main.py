@@ -8,7 +8,7 @@ import threading
 from datetime import date, datetime
 from decimal import Decimal
 
-from zakat import cetak, eksport, kemas, nisab, readme, store, ui, versi
+from zakat import cetak, eksport, kemas, nisab, qadha, readme, store, ui, versi
 from zakat.kira import Hasil, Tolakan, kira_kaedah_a, kira_kaedah_b
 
 LEBAR = 52
@@ -103,27 +103,13 @@ def alir_kaedah_a(cfg):
     skrin_hasil([hasil], label_tahun)
 
 
-def alir_kaedah_b(cfg):
-    ui.bersih()
-    print()
-    print(ui.warna("  KAEDAH B — DENGAN TOLAKAN", ui.W.TEBAL))
-    print()
+def minta_tolakan(cfg, lelaki):
+    """Kumpul tolakan tahunan. Pulang senarai Tolakan, atau None kalau batal.
 
-    jantina = ui.tanya_pilih(
-        {"1", "2"},
-        "  Jantina   [1] Lelaki   [2] Perempuan\n  pilih ▸ ",
-    )
-    if jantina is None:
-        return
-    lelaki = jantina == "1"
-    print()
-
-    pend = minta_pendapatan()
-    if pend is None:
-        return
-    kasar, nota = pend
-
-    # --- tolakan tahunan ---
+    Dipakai oleh kiraan biasa DAN oleh kiraan bundle qadha. Dua salinan
+    soal selidik yang sama akan menyimpang — satu ditambah medan baharu,
+    satu tertinggal — dan pengguna tak akan nampak bezanya.
+    """
     print()
     print(ui.garis("TOLAKAN (tahunan)", LEBAR))
     tolakan = []
@@ -136,7 +122,7 @@ def alir_kaedah_b(cfg):
         maks = int(cfg["isteri_maks"])
         bil = ui.tanya_int(f"Isteri (0-{maks} orang)", 0, maks, "0")
         if bil is None:
-            return
+            return None
         if bil > 0:
             kadar_i = Decimal(str(cfg["tolakan_isteri"]))
             tolakan.append(Tolakan(
@@ -156,12 +142,12 @@ def alir_kaedah_b(cfg):
         f"[2] {ui.rm_pendek(kadar_b)}\n  pilih ▸ ",
     )
     if pilih_kadar is None:
-        return
+        return None
     kadar_anak = kadar_a if pilih_kadar == "1" else kadar_b
 
     bil_anak = ui.tanya_int("Bilangan anak", 0, 30, "0")
     if bil_anak is None:
-        return
+        return None
     if bil_anak > 0:
         tolakan.append(Tolakan(
             "Anak", kadar_anak * bil_anak,
@@ -176,12 +162,45 @@ def alir_kaedah_b(cfg):
     for label in ("KWSP", "Tabung Haji", "ILTAT"):
         v = ui.tanya_duit(f"{label} (RM/bulan)", "0")
         if v is None:
-            return
+            return None
         tolakan.append(Tolakan(
             label, v * 12,
             nota=f"{v:,.0f} × 12",
             nota_penuh=f"{ui.rm_pendek(v)} × 12",
         ))
+    return tolakan
+
+
+def minta_jantina():
+    """Pulang True kalau lelaki, False kalau perempuan, None kalau batal."""
+    jantina = ui.tanya_pilih(
+        {"1", "2"},
+        "  Jantina   [1] Lelaki   [2] Perempuan\n  pilih ▸ ",
+    )
+    if jantina is None:
+        return None
+    return jantina == "1"
+
+
+def alir_kaedah_b(cfg):
+    ui.bersih()
+    print()
+    print(ui.warna("  KAEDAH B — DENGAN TOLAKAN", ui.W.TEBAL))
+    print()
+
+    lelaki = minta_jantina()
+    if lelaki is None:
+        return
+    print()
+
+    pend = minta_pendapatan()
+    if pend is None:
+        return
+    kasar, nota = pend
+
+    tolakan = minta_tolakan(cfg, lelaki)
+    if tolakan is None:
+        return
 
     thn = minta_tahun(cfg)
     if thn is None:
@@ -249,7 +268,7 @@ def skrin_hasil(hasil_senarai, label_tahun):
         pesan_nisab = nisab.mesej_ringkas(store.config())
         if pesan_nisab:
             print(ui.warna("  ⚠ " + pesan_nisab, ui.W.KUNING))
-            print(ui.warna("    Betulkan di [3] Kadar & Tolakan.", ui.W.MALAP))
+            print(ui.warna("    Betulkan di [7] Kadar & Tolakan.", ui.W.MALAP))
             print()
         print("  [P] Print / Salin    [S] Simpan    [0] Menu")
         pilih = ui.tanya_pilih({"p", "s", "0"}, "\n  pilih ▸ ")
@@ -259,6 +278,24 @@ def skrin_hasil(hasil_senarai, label_tahun):
             skrin_cetak(hasil_senarai, label_tahun)
         else:
             simpan_rekod(hasil_senarai, label_tahun)
+
+
+def _amaran_nisab_cetak():
+    """Amaran terakhir sebelum teks keluar. Pulang False kalau dibatalkan.
+
+    Selepas ini teks dihantar kepada pembayar, dan angka yang salah
+    sukar ditarik balik. Dipakai oleh cetakan biasa dan cetakan qadha —
+    satu salinan sahaja, supaya kedua-duanya tak menyimpang.
+    """
+    pesan_nisab = nisab.mesej_ringkas(store.config())
+    if not pesan_nisab:
+        return True
+    print()
+    print(ui.warna("  ⚠ " + pesan_nisab, ui.W.KUNING))
+    print(ui.warna("    Cetakan ini akan keluar dengan nisab itu.", ui.W.KUNING))
+    print()
+    print("  [ENTER] teruskan    [0] batal")
+    return ui.tanya_pilih({"", "0"}, "  pilih ▸ ") != "0"
 
 
 def skrin_cetak(hasil_senarai, label_tahun):
@@ -272,17 +309,8 @@ def skrin_cetak(hasil_senarai, label_tahun):
         return
     nama = nama.strip()
 
-    # Amaran terakhir sebelum teks keluar — selepas ini ia dihantar kepada
-    # pembayar, dan angka yang salah sukar ditarik balik.
-    pesan_nisab = nisab.mesej_ringkas(store.config())
-    if pesan_nisab:
-        print()
-        print(ui.warna("  ⚠ " + pesan_nisab, ui.W.KUNING))
-        print(ui.warna("    Cetakan ini akan keluar dengan nisab itu.", ui.W.KUNING))
-        print()
-        print("  [ENTER] teruskan    [0] batal")
-        if ui.tanya_pilih({"", "0"}, "  pilih ▸ ") == "0":
-            return
+    if not _amaran_nisab_cetak():
+        return
 
     teks = cetak.jana(
         hasil_senarai, store.event(), nama, label_tahun,
@@ -312,6 +340,580 @@ def simpan_rekod(hasil_senarai, label_tahun):
     store.tambah_sejarah(_buat_rekod(hasil_senarai, label_tahun))
     print(ui.warna("  ✓ rekod disimpan", ui.W.HIJAU))
     ui.jeda()
+
+
+# ----------------------------------------------------------------- qadha
+
+def _bulanan_kepada_tahunan(v, bulanan):
+    return v * 12 if bulanan else v
+
+
+def _tahunan_kepada_input(v, bulanan):
+    """Balik ke unit yang ditaip, supaya ENTER mengekalkan nilai lama.
+
+    Darab 12 kemudian bahagi 12 semula adalah tepat dalam Decimal, jadi
+    nombor yang dipaparkan semula sentiasa sama dengan yang ditaip.
+    """
+    return v / 12 if bulanan else v
+
+
+def _tanya_satu_tahun(b, label):
+    """Tanya satu tahun daripada senarai yang sedang dipilih."""
+    while True:
+        ui.bersih()
+        print(ui.garis(label.upper(), LEBAR))
+        print()
+        print("  " + ", ".join(str(t) for t in b.tahun))
+        print()
+        t = ui.tanya_int("Tahun (0 = batal)", 0, tahun_semasa(), "")
+        if t is None or t == 0:
+            return None
+        if t not in b.tahun:
+            print(ui.warna("  ! tahun itu tiada dalam senarai", ui.W.MERAH))
+            ui.jeda("  [ENTER] cuba lagi")
+            continue
+        return t
+
+
+def _tahun_julat():
+    """Julat tahun berturut, cth. 2018 hingga 2021."""
+    ui.bersih()
+    print(ui.garis("JULAT TAHUN", LEBAR))
+    print()
+    semasa = tahun_semasa()
+    dari = ui.tanya_int(f"Dari tahun ({nisab.TAHUN_MULA}-{semasa})",
+                        nisab.TAHUN_MULA, semasa, str(nisab.TAHUN_MULA))
+    if dari is None:
+        return None
+    # Minimum ditetapkan pada `dari`, jadi "hingga sebelum dari" ditolak
+    # oleh tanya_int sendiri — tiada semakan berasingan yang boleh
+    # tertinggal.
+    hingga = ui.tanya_int(f"Hingga tahun ({dari}-{semasa})",
+                          dari, semasa, str(semasa))
+    if hingga is None:
+        return None
+    return list(range(dari, hingga + 1))
+
+
+def _tahun_manual():
+    """Taip tahun satu-satu. Taip tahun yang sudah ada akan membuangnya.
+
+    Toggle ini disengajakan: tanpa jalan keluar, tersilap taip bermakna
+    tahun itu tersangkut dalam senarai sehingga app dimulakan semula.
+    """
+    semasa = tahun_semasa()
+    tahun = []
+    while True:
+        ui.bersih()
+        print(ui.garis("PILIH TAHUN — MANUAL", LEBAR))
+        print()
+        if tahun:
+            for b in _balut("Terpilih: "
+                            + ", ".join(str(t) for t in sorted(tahun)), DALAM):
+                print("  " + b)
+        else:
+            print(ui.warna("  (belum ada tahun dipilih)", ui.W.MALAP))
+        print()
+        print(f"  Taip tahun {nisab.TAHUN_MULA}-{semasa} untuk tambah.")
+        print(ui.warna("  Taip tahun yang sudah ada untuk membuangnya.",
+                       ui.W.MALAP))
+        print()
+
+        # ui.tanya, bukan ui.tanya_int: tanya_int memetakan input kosong
+        # kepada 0 dan gagal semakan minimum, jadi ia tak boleh
+        # menyatakan "ENTER = siap". Gelung sendiri juga membolehkan
+        # senarai dilukis semula antara pusingan.
+        jawab = ui.tanya("Tahun (ENTER = siap)", "", boleh_kosong=True)
+        if jawab is None:
+            return None
+        if jawab == "":
+            return sorted(tahun)
+        try:
+            t = int(jawab)
+        except ValueError:
+            print(ui.warna("  ! tahun mesti nombor", ui.W.MERAH))
+            ui.jeda("  [ENTER] cuba lagi")
+            continue
+        if not (nisab.TAHUN_MULA <= t <= semasa):
+            print(ui.warna(f"  ! tahun mesti antara {nisab.TAHUN_MULA} "
+                           f"dan {semasa}", ui.W.MERAH))
+            ui.jeda("  [ENTER] cuba lagi")
+            continue
+        if t in tahun:
+            tahun.remove(t)
+        else:
+            tahun.append(t)
+
+
+def pilih_tahun():
+    """Tanya tahun mana yang hendak dikira.
+
+    Pulang senarai tahun menaik, [] kalau tiada tahun dipilih, atau None
+    kalau dibatalkan sepenuhnya.
+    """
+    while True:
+        ui.bersih()
+        print()
+        print(ui.warna("  PILIH TAHUN", ui.W.TEBAL))
+        print()
+        print("  [1]  Julat   — dari tahun berapa hingga tahun berapa")
+        print("  [2]  Manual  — taip tahun satu-satu")
+        print("  [0]  Kembali")
+        print()
+        pilih = ui.tanya_pilih({"1", "2", "0"}, "  pilih ▸ ")
+        if pilih is None or pilih == "0":
+            return None
+        tahun = _tahun_julat() if pilih == "1" else _tahun_manual()
+        if tahun is None:
+            continue  # batal dalam submod — balik ke menu ini
+        return tahun
+
+
+def alir_bundle(cfg):
+    """Kiraan qadha merentas beberapa tahun sekali gus.
+
+    Susunan soalan: kaedah -> tolakan (B sahaja, sekali) -> kadar ->
+    mod input (sekali) -> tahun mana -> isi gaji -> semak -> kira.
+
+    Tolakan dan mod input ditanya sekali di hadapan dengan sengaja.
+    Menanyakannya bagi setiap tahun menjadikan dua belas tahun sebagai
+    dua belas soal selidik penuh, sedangkan tolakan seseorang jarang
+    berubah dari tahun ke tahun.
+    """
+    ui.bersih()
+    print()
+    print(ui.warna("  KIRAAN BUNDLE — QADHA ZAKAT", ui.W.TEBAL))
+    print()
+
+    pilih = ui.tanya_pilih(
+        {"1", "2"},
+        "  Kaedah   [1] A — Tanpa Tolakan   [2] B — Dengan Tolakan\n  pilih ▸ ",
+    )
+    if pilih is None:
+        return
+    kaedah = "A" if pilih == "1" else "B"
+
+    tolakan = []
+    if kaedah == "B":
+        lelaki = minta_jantina()
+        if lelaki is None:
+            return
+        tolakan = minta_tolakan(cfg, lelaki)
+        if tolakan is None:
+            return
+        print()
+        print(ui.warna("  Tolakan ini dipakai oleh SEMUA tahun. Boleh diubah "
+                       "bagi tahun tertentu kemudian.", ui.W.MALAP))
+
+    print()
+    print(ui.garis("KADAR", LEBAR))
+    pilih = ui.tanya_pilih(
+        {"1", "2"},
+        f"  [1] Masihi {cfg['kadar_masihi']:.3f}%    "
+        f"[2] Hijrah {cfg['kadar_hijrah']:.3f}%\n  pilih ▸ ",
+    )
+    if pilih is None:
+        return
+    # Senarai tahun sentiasa Masihi (nisab dikunci ikut tahun Masihi);
+    # hanya KADAR yang boleh Masihi atau Hijrah.
+    nama_kadar = "Masihi" if pilih == "1" else "Hijrah"
+    kadar = Decimal(str(cfg["kadar_masihi"] if pilih == "1"
+                        else cfg["kadar_hijrah"]))
+
+    print()
+    print(ui.garis("INPUT GAJI", LEBAR))
+    pilih = ui.tanya_pilih(
+        {"1", "2"},
+        "  [1] Bulanan (didarab 12)   [2] Tahunan\n  pilih ▸ ",
+    )
+    if pilih is None:
+        return
+    bulanan = pilih == "1"
+
+    tahun = pilih_tahun()
+    if tahun is None:
+        return
+    if not tahun:
+        print()
+        print(ui.warna("  ! tiada tahun dipilih", ui.W.MERAH))
+        ui.jeda()
+        return
+
+    b = qadha.Bundle(tahun, kaedah)
+    b.tolakan_lalai = tolakan
+    skrin_bundle(b, cfg, bulanan, kadar, nama_kadar)
+
+
+def _ubah_tolakan_tahun(b, cfg):
+    """Ubah tolakan bagi satu tahun sahaja."""
+    t = _tanya_satu_tahun(b, "Tolakan tahun mana")
+    if t is None:
+        return
+
+    if b.tolakan_diubah(t):
+        ui.bersih()
+        print(ui.garis(f"TOLAKAN {t}", LEBAR))
+        print()
+        print(ui.warna("  Tahun ini sudah ada tolakan sendiri.",
+                       ui.W.MALAP))
+        print()
+        print("  [1] Ubah semula")
+        print("  [2] Guna tolakan asal semula")
+        print("  [0] Batal")
+        print()
+        pilih = ui.tanya_pilih({"1", "2", "0"}, "  pilih ▸ ")
+        if pilih is None or pilih == "0":
+            return
+        if pilih == "2":
+            b.buang_tolakan_khas(t)
+            print()
+            print(ui.warna(f"  ✓ {t} kembali guna tolakan asal", ui.W.HIJAU))
+            ui.jeda()
+            return
+
+    lelaki = minta_jantina()
+    if lelaki is None:
+        return
+    tolakan = minta_tolakan(cfg, lelaki)
+    if tolakan is None:
+        return
+    b.set_tolakan(t, tolakan)
+    print()
+    print(ui.warna(f"  ✓ tolakan {t} diubah", ui.W.HIJAU))
+    ui.jeda()
+
+
+def _hapus_tahun(b):
+    if len(b.tahun) <= 1:
+        print()
+        print(ui.warna("  ! ini tahun terakhir — tak boleh dihapus",
+                       ui.W.MERAH))
+        ui.jeda()
+        return
+    t = _tanya_satu_tahun(b, "Hapus tahun mana")
+    if t is None:
+        return
+    b.hapus(t)
+    print()
+    print(ui.warna(f"  ✓ {t} dibuang dari kiraan", ui.W.HIJAU))
+    ui.jeda()
+
+
+def skrin_bundle(b, cfg, bulanan, kadar, nama_kadar):
+    """Senarai tahun — isi pendapatan kasar, kemudian semak dan kira."""
+    while True:
+        ui.bersih()
+        print()
+        print(ui.warna("  KIRAAN BUNDLE — QADHA ZAKAT", ui.W.TEBAL))
+        print(ui.warna(
+            f"  Kaedah {b.kaedah}   Kadar {nama_kadar}   "
+            f"Input {'bulanan' if bulanan else 'tahunan'}", ui.W.MALAP))
+        print()
+
+        L = []
+        for t in b.tahun:
+            tanda = " *" if b.tolakan_diubah(t) else ""
+            nilai = b.kasar.get(t)
+            if nilai is None:
+                kanan = "(belum diisi)"
+            elif bulanan:
+                # Kedua-dua unit ditunjukkan: yang ditaip, dan yang
+                # sebenarnya masuk ke dalam kiraan.
+                kanan = (f"{ui.rm_pendek(_tahunan_kepada_input(nilai, True))}"
+                         f" × 12 = {ui.rm_pendek(nilai)}")
+            else:
+                kanan = ui.rm_pendek(nilai)
+            L.append(ui.baris_kv(f"{t}{tanda}", kanan, DALAM))
+        print(ui.kotak(L, LEBAR))
+        print()
+
+        if any(b.tolakan_diubah(t) for t in b.tahun):
+            print(ui.warna("  * tolakan tahun ini diubah", ui.W.MALAP))
+            print()
+
+        print("  Taip tahun untuk isi   [T] tolakan   [H] hapus   "
+              "[K] semak & kira   [0] kembali")
+        print()
+        sah = {str(t) for t in b.tahun} | {"t", "h", "k", "0"}
+        pilih = ui.tanya_pilih(sah, "  pilih ▸ ")
+        if pilih is None or pilih == "0":
+            return
+        if pilih == "t":
+            _ubah_tolakan_tahun(b, cfg)
+            continue
+        if pilih == "h":
+            _hapus_tahun(b)
+            continue
+        if pilih == "k":
+            hasil_baris = skrin_semak_bundle(b, cfg, bulanan, kadar, nama_kadar)
+            if hasil_baris is None:
+                continue
+            skrin_hasil_qadha(hasil_baris)
+            return
+
+        t = int(pilih)
+        lama = b.kasar.get(t)
+        unit = "bulan" if bulanan else "tahun"
+        lalai = ("" if lama is None
+                 else str(_tahunan_kepada_input(lama, bulanan)))
+        v = ui.tanya_duit(f"Pendapatan kasar {t} (RM/{unit})", lalai)
+        if v is None:
+            continue
+        b.set_kasar(t, _bulanan_kepada_tahunan(v, bulanan))
+
+
+def skrin_semak_bundle(b, cfg, bulanan, kadar, nama_kadar):
+    """Paparan semak sebelum kiraan dijalankan.
+
+    Pulang [(tahun, Hasil)] kalau pengguna menekan [K], atau None kalau
+    dibatalkan.
+
+    Semak ini bukan hiasan. Hasilnya nanti satu jumlah yang besar, dan
+    satu angka yang tersalah taip pada satu tahun mudah hilang di dalam
+    jadual hasil. Di sini setiap tahun berdiri sendiri.
+    """
+    while True:
+        # Dibaca semula setiap pusingan: skrin nisab boleh mengubahnya.
+        jadual = store.jadual_nisab()
+        kosong = b.tahun_kosong()
+        tanpa_nisab = b.tahun_tanpa_nisab(cfg, jadual)
+
+        ui.bersih()
+        print()
+        print(ui.warna("  SEMAK SEBELUM KIRA", ui.W.TEBAL))
+        print(ui.warna(
+            f"  Kaedah {b.kaedah}   Kadar {nama_kadar} ({kadar:.3f}%)   "
+            f"Input {'bulanan' if bulanan else 'tahunan'}", ui.W.MALAP))
+        print(ui.warna(f"  {len(b.tahun)} tahun dipilih", ui.W.MALAP))
+        print()
+
+        L = []
+        for t in b.tahun:
+            nilai = b.kasar.get(t)
+            L.append(ui.baris_kv(
+                str(t), "(belum diisi)" if nilai is None else ui.rm(nilai),
+                DALAM))
+        print(ui.kotak(L, LEBAR))
+        print()
+
+        if b.kaedah == "B" and b.tolakan_lalai:
+            # Tolakan tidak kelihatan di skrin hasil mahupun di cetakan
+            # qadha (kedua-duanya per tahun, bukan per tolakan). Tanpa
+            # baris di sini, satu KWSP yang tersalah taip langsung tiada
+            # tempat untuk dilihat — sedangkan inilah skrin semaknya.
+            TL = [ui.baris_kv("  " + t.label_kotak(), ui.rm(t.nilai), DALAM)
+                  for t in b.tolakan_lalai]
+            TL.append(ui.baris_kv("  Jumlah tolakan",
+                                  ui.rm(b.jumlah_tolakan_lalai()), DALAM))
+            print(ui.kotak(TL, LEBAR, tajuk="TOLAKAN SEMUA TAHUN"))
+            print()
+
+            khas = [t for t in b.tahun if b.tolakan_diubah(t)]
+            if khas:
+                print(ui.warna("  ⚠ Tolakan sendiri bagi: "
+                               + ", ".join(str(t) for t in khas), ui.W.KUNING))
+                for t in khas:
+                    print("    " + ui.baris_kv(
+                        str(t), ui.rm(b.jumlah_tolakan(t)), DALAM))
+                print()
+
+        # Tahun yang dipilih tetapi kosong BUKAN halangan keras — tahun
+        # tanpa pendapatan memang sah dikecualikan. Tetapi ia mesti
+        # kelihatan, kalau tidak tahun yang tertinggal hilang senyap.
+        if kosong:
+            print(ui.warna("  ⚠ Belum diisi: "
+                           + ", ".join(str(t) for t in kosong), ui.W.KUNING))
+            print(ui.warna("    Tahun itu akan dilangkau.", ui.W.MALAP))
+            print()
+
+        # Tahun tanpa nisab pula halangan KERAS: melangkaunya bermakna
+        # menilai gaji tahun itu dengan nisab tahun lain.
+        if tanpa_nisab:
+            print(ui.warna("  ✗ Nisab belum diisi bagi: "
+                           + ", ".join(str(t) for t in tanpa_nisab), ui.W.MERAH))
+            print(ui.warna("    Setiap tahun dinilai dengan nisab tahun itu,",
+                           ui.W.MALAP))
+            print(ui.warna("    jadi kiraan tidak boleh diteruskan.",
+                           ui.W.MALAP))
+            print()
+            print("  [T] Isi nisab    [0] Kembali")
+            print()
+            pilih = ui.tanya_pilih({"t", "0"}, "  pilih ▸ ")
+            if pilih == "t":
+                skrin_nisab_tahun()
+                continue
+            return None
+
+        print("  [K] Kira    [0] Kembali ke senarai")
+        print()
+        pilih = ui.tanya_pilih({"k", "0"}, "  pilih ▸ ")
+        if pilih is None or pilih == "0":
+            return None
+        hasil_baris = b.kira(cfg, jadual, kadar)
+        if not hasil_baris:
+            print()
+            print(ui.warna("  ! tiada tahun yang boleh dikira", ui.W.MERAH))
+            ui.jeda()
+            return None
+        return hasil_baris
+
+
+def _baris_hasil_qadha(baris):
+    tahun = [t for t, _ in baris]
+    h0 = baris[0][1]
+
+    L = [
+        ui.baris_kv("Tahun",
+                    f"{tahun[0]} – {tahun[-1]}" if len(tahun) > 1
+                    else str(tahun[0]), DALAM),
+        ui.baris_kv("Kaedah", f"{h0.kaedah}    Kadar {h0.kadar:.3f}%", DALAM),
+        ui.baris_kv("Nisab", "ikut tahun masing-masing", DALAM),
+        "",
+    ]
+    for t, h in baris:
+        kiri = str(t) if h.cukup_nisab else f"{t}  ✗ bawah nisab"
+        # Kaedah B: asas selepas tolakan ditunjukkan, sebab itulah angka
+        # yang tolakan itu hasilkan. Tanpa ia, satu tolakan yang tersalah
+        # taip langsung tiada kesan yang kelihatan sehingga zakatnya
+        # berbeza — dan itu sudah terlambat.
+        if h.kaedah == "B" and h.tolakan:
+            kanan = f"{ui.rm(h.kena_zakat)} → {ui.rm(h.zakat_setahun)}"
+        else:
+            kanan = ui.rm(h.zakat_setahun)
+        L.append(ui.baris_kv(kiri, kanan, DALAM))
+    L.append(ui.baris_kv("", "─" * 12, DALAM))
+    L.append(ui.baris_kv("JUMLAH WAJIB", ui.rm(qadha.jumlah(baris)), DALAM))
+    if qadha.tahun_tak_cukup(baris):
+        L.append(ui.baris_kv("", "✗ dikecualikan dari jumlah", DALAM))
+    return L
+
+
+def _buat_rekod_qadha(baris, nama=""):
+    """Rekod sejarah bagi satu kiraan qadha.
+
+    Setiap entri hasil membawa tahunnya sendiri. Hasil.dari_rekod cuma
+    membaca kunci yang ia kenal, jadi kunci tambahan ini tidak
+    mengganggu apa-apa — tetapi pencetak qadha boleh memasangkan tahun
+    dengan hasilnya tanpa tatasusunan selari atau pengiraan semula.
+    """
+    ev = store.event()
+    tahun = [t for t, _ in baris]
+    return {
+        "tarikh": tarikh_hari_ini(),
+        "masa": datetime.now().strftime("%H:%M"),
+        "event": ev.get("nama", ""),
+        "tarikh_event": ev.get("tarikh", ""),
+        "tempat": ev.get("tempat", ""),
+        "nama": nama,
+        "jenis": "qadha",
+        "kaedah": baris[0][1].kaedah,
+        "tahun": (f"{tahun[0]} – {tahun[-1]}" if len(tahun) > 1
+                  else str(tahun[0])),
+        "hasil": [dict(h.ringkas(), tahun=t) for t, h in baris],
+    }
+
+
+def _cetak_qadha(baris):
+    ui.bersih()
+    print(ui.garis("PRINT QADHA", LEBAR))
+    print()
+    nama = ui.tanya("Nama pembayar (kosongkan kalau tak perlu)", "",
+                    boleh_kosong=True)
+    if nama is None:
+        return
+    nama = nama.strip()
+
+    if not _amaran_nisab_cetak():
+        return
+
+    teks = cetak.qadha(baris, store.event(), nama, baris[0][1].kaedah,
+                       tarikh_hari_ini())
+    store.tambah_sejarah(_buat_rekod_qadha(baris, nama))
+    _papar_teks(teks, nota="disimpan ke sejarah")
+
+
+def skrin_hasil_qadha(baris):
+    while True:
+        ui.bersih()
+        print()
+        print(ui.warna("  QADHA ZAKAT — HASIL", ui.W.TEBAL))
+        print()
+        print(ui.kotak(_baris_hasil_qadha(baris), LEBAR))
+        print()
+        print("  [P] Print / Salin    [S] Simpan    [0] Menu")
+        print()
+        pilih = ui.tanya_pilih({"p", "s", "0"}, "  pilih ▸ ")
+        if pilih is None or pilih == "0":
+            return
+        if pilih == "p":
+            _cetak_qadha(baris)
+        else:
+            store.tambah_sejarah(_buat_rekod_qadha(baris))
+            print(ui.warna("  ✓ rekod disimpan", ui.W.HIJAU))
+            ui.jeda()
+
+
+def _jumlah_rekod_qadha(rekod):
+    """Jumlah wajib bagi satu rekod qadha — untuk senarai sejarah."""
+    baris = [(h.get("tahun"), Hasil.dari_rekod(h))
+             for h in rekod.get("hasil", [])]
+    return qadha.jumlah(baris)
+
+
+def skrin_cetak_qadha(rekod):
+    """Print semula rekod qadha daripada sejarah."""
+    ui.bersih()
+    print(ui.garis("PRINT REKOD — QADHA", LEBAR))
+    print()
+    print(f"  {rekod['tarikh']} {rekod.get('masa', '')}   "
+          f"{rekod.get('nama') or '(tanpa nama)'}")
+    print()
+
+    nama = ui.tanya("Nama pembayar (kosongkan kalau tak perlu)",
+                    rekod.get("nama", ""), boleh_kosong=True)
+    if nama is None:
+        return
+
+    baris = []
+    for h in rekod.get("hasil", []):
+        try:
+            baris.append((int(h.get("tahun", 0)), Hasil.dari_rekod(h)))
+        except (TypeError, ValueError):
+            continue
+    if not baris:
+        print(ui.warna("  ✗ rekod ini tiada tahun yang boleh dibaca",
+                       ui.W.MERAH))
+        ui.jeda()
+        return
+    baris.sort(key=lambda x: x[0])
+
+    ev = {
+        "nama": rekod.get("event", ""),
+        "tarikh": rekod.get("tarikh_event", ""),
+        "tempat": rekod.get("tempat", ""),
+    }
+    teks = cetak.qadha(baris, ev, nama.strip(),
+                       rekod.get("kaedah") or baris[0][1].kaedah,
+                       rekod.get("tarikh", tarikh_hari_ini()))
+    _papar_teks(teks)
+
+
+def menu_qadha(cfg):
+    while True:
+        ui.bersih()
+        print()
+        print(ui.warna("  QADHA ZAKAT", ui.W.TEBAL))
+        print()
+        print("  [1]  Kiraan Bundle")
+        print(ui.warna("       Kira zakat tertunggak beberapa tahun sekali gus",
+                       ui.W.MALAP))
+        print()
+        print("  [0]  Kembali")
+        print()
+        pilih = ui.tanya_pilih({"1", "0"}, "  pilih ▸ ")
+        if pilih is None or pilih == "0":
+            return
+        alir_bundle(cfg)
 
 
 # ------------------------------------------------------------------ menu
@@ -401,6 +1003,81 @@ MEDAN = [
 ]
 
 
+def skrin_nisab_tahun():
+    """Senarai nisab ikut tahun — 2015 hingga tahun semasa.
+
+    Tahun semasa bukan sekadar satu baris dalam senarai ini: ia ditulis
+    ke cfg["nisab"], sebab itulah nilai yang dipakai oleh kiraan harian
+    dan oleh peringatan suku. Tahun-tahun lain masuk ke data/nisab.json.
+    Satu kebenaran bagi setiap tahun, tiada cermin antara keduanya.
+
+    Menyunting tahun SEMASA menandakan nisab sudah disahkan semula
+    (tuan baru menyemaknya). Menyunting tahun LAMA tidak — peringatan
+    suku hanya mengenai nisab semasa, dan menandanya daripada suntingan
+    tahun 2015 akan memadamkan peringatan yang masih belum lulus.
+    """
+    while True:
+        cfg = store.config()
+        jadual = store.jadual_nisab()
+        semasa = tahun_semasa()
+        tahun_senarai = nisab.senarai_tahun()
+
+        ui.bersih()
+        print()
+        print(ui.warna("  NISAB IKUT TAHUN", ui.W.TEBAL))
+        print()
+
+        L = []
+        kosong = 0
+        for t in tahun_senarai:
+            nilai = nisab.untuk_tahun(cfg, jadual, t)
+            label = f"{t}" + ("  (semasa)" if t == semasa else "")
+            if nilai is None:
+                kosong += 1
+                L.append(ui.baris_kv(label, "(belum diisi)", DALAM))
+            else:
+                L.append(ui.baris_kv(label, ui.rm(nilai), DALAM))
+        print(ui.kotak(L, LEBAR))
+        print()
+
+        if kosong:
+            print(ui.warna(
+                f"  {kosong} tahun belum diisi. Kiraan qadha memerlukan "
+                f"nisab tahun itu.", ui.W.MALAP))
+            print()
+
+        print(f"  [{nisab.TAHUN_MULA}-{semasa}] taip tahun untuk isi/ubah"
+              "   [0] kembali")
+        print()
+        pilih = ui.tanya_pilih({str(t) for t in tahun_senarai} | {"0"},
+                               "  pilih ▸ ")
+        if pilih is None or pilih == "0":
+            return
+
+        t = int(pilih)
+        lama = nisab.untuk_tahun(cfg, jadual, t)
+        nilai = ui.tanya_duit(
+            f"Nisab {t} (RM)", "" if lama is None else str(lama))
+        if nilai is None:
+            continue
+
+        if t == semasa:
+            cfg["nisab"] = float(nilai)
+            nisab.tanda_dikemas(cfg)
+            store.simpan_config(cfg)
+            print()
+            print(ui.warna(f"  ✓ nisab {t} disimpan — ditanda sudah "
+                           f"disahkan juga", ui.W.HIJAU))
+        else:
+            jadual[str(t)] = float(nilai)
+            store.simpan_jadual_nisab(jadual)
+            print()
+            print(ui.warna(f"  ✓ nisab {t} disimpan", ui.W.HIJAU))
+            print(ui.warna("    (peringatan suku tak berubah — ia mengenai "
+                           "nisab semasa)", ui.W.MALAP))
+        ui.jeda()
+
+
 def menu_kadar():
     while True:
         cfg = store.config()
@@ -428,15 +1105,21 @@ def menu_kadar():
         print()
         if nisab.perlu_kemas(cfg)[0]:
             print(ui.warna("  ⚠ " + nisab.mesej_ringkas(cfg), ui.W.KUNING))
-            print(ui.warna("    Sahkan nisab negeri tuan, kemas kini [3] kalau "
-                           "berubah,", ui.W.MALAP))
-            print(ui.warna("    kemudian tekan [N].", ui.W.MALAP))
+            # Merujuk medan ke-3 dalam menu ini, BUKAN menu utama —
+            # sebab itu disebut "medan", bukan "[3]" sahaja.
+            print(ui.warna("    Sahkan nisab negeri tuan, kemas kini medan "
+                           "[3] Nisab", ui.W.MALAP))
+            print(ui.warna("    kalau berubah, kemudian tekan [N].", ui.W.MALAP))
             print()
-        print("  [1-8] ubah   [N] nisab dah disahkan   [R] reset   [0] kembali")
-        pilih = ui.tanya_pilih({str(i) for i in range(1, 9)} | {"n", "r", "0"},
-                               "\n  pilih ▸ ")
+        print("  [1-8] ubah   [T] nisab ikut tahun   [N] dah disahkan   "
+              "[R] reset   [0] kembali")
+        pilih = ui.tanya_pilih({str(i) for i in range(1, 9)}
+                               | {"t", "n", "r", "0"}, "\n  pilih ▸ ")
         if pilih is None or pilih == "0":
             return
+        if pilih == "t":
+            skrin_nisab_tahun()
+            continue
         if pilih == "n":
             # Nilai nisab selalunya tidak berubah — jadi pengesahan mesti
             # boleh dilakukan tanpa perlu menaip nilai semula.
@@ -726,9 +1409,17 @@ def menu_sejarah():
             ev = r.get("event") or ""
             tajuk = siapa + (f"  ({ev})" if ev else "")
             print(f"  [{i:>2}]  {r['tarikh']} {r.get('masa', '')}   {tajuk}")
-            nilai = "   ".join(
-                f"{h['kaedah']} {ui.rm(h['zakat_setahun'])}" for h in r["hasil"]
-            )
+            if r.get("jenis") == "qadha":
+                # Rekod qadha ada berpuluh entri hasil. Menyenaraikan
+                # setiap satunya menghasilkan dinding teks tanpa makna —
+                # yang berguna di sini cuma julat tahun dan jumlahnya.
+                nilai = (f"QADHA {r.get('tahun', '')}   "
+                         f"{ui.rm(_jumlah_rekod_qadha(r))}")
+            else:
+                nilai = "   ".join(
+                    f"{h['kaedah']} {ui.rm(h['zakat_setahun'])}"
+                    for h in r["hasil"]
+                )
             print(ui.warna(f"        {nilai}", ui.W.MALAP))
         print()
         print(f"  jumlah rekod: {len(rekod)}  (menunjuk {len(tunjuk)} terkini)")
@@ -746,7 +1437,13 @@ def menu_sejarah():
             print(ui.warna("  ✓ sejarah dikosongkan", ui.W.HIJAU))
             ui.jeda()
             continue
-        skrin_cetak_rekod(tunjuk[int(pilih) - 1])
+        rekod_pilih = tunjuk[int(pilih) - 1]
+        # Rekod lama tiada kunci "jenis" — ia dianggap kiraan biasa, jadi
+        # cetakan semulanya tidak berubah langsung.
+        if rekod_pilih.get("jenis") == "qadha":
+            skrin_cetak_qadha(rekod_pilih)
+        else:
+            skrin_cetak_rekod(rekod_pilih)
 
 
 # -------------------------------------------------------------- eksport
@@ -763,8 +1460,11 @@ def skrin_eksport():
     rekod = store.sejarah()
     ev = store.event()
 
-    print(f"  Tetapan, event, dan {len(rekod)} rekod sejarah akan")
-    print("  ditulis ke satu fail teks.")
+    jumlah_nisab = sum(1 for t in nisab.senarai_tahun()
+                       if nisab.untuk_tahun(cfg, store.jadual_nisab(), t)
+                       is not None)
+    print(f"  Tetapan, nisab {jumlah_nisab} tahun, event, dan")
+    print(f"  {len(rekod)} rekod sejarah akan ditulis ke satu fail teks.")
     print()
     print(ui.warna("  Fail ini mengandungi nama pembayar.", ui.W.KUNING))
     print(ui.warna("  Simpan di tempat yang selamat.", ui.W.KUNING))
@@ -774,7 +1474,7 @@ def skrin_eksport():
     if ui.tanya_pilih({"e", "0"}, "  pilih ▸ ") != "e":
         return
 
-    teks = eksport.jana(cfg, ev, rekod)
+    teks = eksport.jana(cfg, ev, rekod, store.jadual_nisab())
     laluan, ralat = eksport.tulis(teks)
 
     ui.bersih()
@@ -985,28 +1685,33 @@ def menu_utama():
             print(ui.kotak([
                 nisab.mesej_ringkas(cfg),
                 "",
-                "[3] Kadar & Tolakan",
+                "[7] Kadar & Tolakan",
             ], LEBAR, tajuk="NISAB PERLU DIKESAHKAN"))
             print()
 
-        # Dua kumpulan: kerja harian, dan urusan app itu sendiri.
+        # Dua kumpulan: kerja harian, dan urusan app itu sendiri. Kadar &
+        # Tolakan masuk APP sebab ia tetapan, bukan kerja harian — ia
+        # jarang dibuka, sedangkan Qadha Zakat boleh jadi kerja harian
+        # bila ada kes tertunggak.
         print(ui.warna("  ── KIRAAN " + "─" * (DALAM - 8), ui.W.MALAP))
         print()
         print("  [1]  Kira Zakat")
         print("  [2]  Daftar")
-        print("  [3]  Kadar & Tolakan")
+        print("  [3]  Qadha Zakat")
         print("  [5]  Sejarah Kiraan")
         print()
         print(ui.warna("  ── APP " + "─" * (DALAM - 5), ui.W.MALAP))
         print()
         print("  [4]  Tetapan")
         print("  [6]  Kemas Kini")
+        print("  [7]  Kadar & Tolakan")
         print()
         print("  [0]  Keluar")
         print()
         print(ui.warna(f"  {versi.penuh()}", ui.W.MALAP))
         print()
-        pilih = ui.tanya_pilih({"1", "2", "3", "4", "5", "6", "0"}, "  pilih ▸ ")
+        pilih = ui.tanya_pilih(
+            {"1", "2", "3", "4", "5", "6", "7", "0"}, "  pilih ▸ ")
         if pilih is None or pilih == "0":
             ui.bersih()
             print("\n  jumpa lagi.\n")
@@ -1016,13 +1721,15 @@ def menu_utama():
         elif pilih == "2":
             menu_daftar()
         elif pilih == "3":
-            menu_kadar()
+            menu_qadha(cfg)
         elif pilih == "4":
             menu_tetapan()
         elif pilih == "5":
             menu_sejarah()
         elif pilih == "6":
             skrin_kemas(store.config())
+        elif pilih == "7":
+            menu_kadar()
 
 
 def main():
