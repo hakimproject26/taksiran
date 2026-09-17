@@ -6,7 +6,7 @@ import textwrap
 from datetime import date, datetime
 from decimal import Decimal
 
-from zakat import cetak, readme, store, ui
+from zakat import cetak, readme, store, ui, versi
 from zakat.kira import Hasil, Tolakan, kira_kaedah_a, kira_kaedah_b
 
 LEBAR = 52
@@ -468,6 +468,7 @@ def menu_tetapan():
         print(ui.kotak([
             ui.baris_kv("Gaya output print",
                         cetak.nama_gaya(cfg.get("gaya", cetak.GAYA_LALAI)), DALAM),
+            ui.baris_kv("Versi", versi.penuh(), DALAM),
         ], LEBAR))
         print()
         print("  [1]  Pilih gaya output print")
@@ -680,6 +681,8 @@ def menu_utama():
         print("  [5]  Sejarah Kiraan")
         print("  [0]  Keluar")
         print()
+        print(ui.warna(f"  {versi.penuh()}", ui.W.MALAP))
+        print()
         pilih = ui.tanya_pilih({"1", "2", "3", "4", "5", "0"}, "  pilih ▸ ")
         if pilih is None or pilih == "0":
             ui.bersih()
@@ -698,6 +701,10 @@ def menu_utama():
 
 
 def main():
+    # Berguna untuk semak versi mana yang ada pada telefon tanpa buka menu.
+    if len(sys.argv) > 1 and sys.argv[1] in ("--versi", "-v"):
+        print(versi.penuh())
+        return 0
     try:
         menu_utama()
     except KeyboardInterrupt:

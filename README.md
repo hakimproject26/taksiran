@@ -1,5 +1,7 @@
 # Taksiran Zakat Pendapatan
 
+**Versi 1.0.0** (17/09/2026)
+
 Kalkulator zakat pendapatan berasaskan terminal untuk Termux (Android).
 
 Dua kaedah kiraan, dan boleh keluarkan teks siap untuk dihantar ke WhatsApp.
@@ -20,6 +22,14 @@ python main.py
 ```
 
 Tak perlu `pip install` apa-apa — guna pustaka standard Python sahaja.
+
+Untuk semak versi yang sedang dipasang, tanpa buka menu:
+
+```bash
+python ~/taksiran/main.py --versi
+```
+
+Versi juga tertera di kaki menu utama dan dalam **Tetapan**.
 
 ### Shortcut (pilihan)
 
@@ -171,11 +181,15 @@ Cetakan semula **tidak** menambah rekod baru ke sejarah.
 ```
 taksiran/
 ├── main.py              menu dan aliran
+├── README.md            fail ini
+├── CHANGELOG.md         sejarah versi
 ├── zakat/
 │   ├── ui.py            kotak, warna, input
 │   ├── store.py         baca/tulis JSON
 │   ├── kira.py          enjin kiraan
-│   └── cetak.py         jana teks WhatsApp
+│   ├── cetak.py         jana teks WhatsApp
+│   ├── readme.py        catatan pembinaan
+│   └── versi.py         nombor versi
 └── data/                terhasil sendiri
     ├── config.json      kadar, nisab, tolakan
     ├── event.json       event aktif
@@ -183,6 +197,25 @@ taksiran/
 ```
 
 Semua data dalam folder `data/` — backup dengan salin folder itu sahaja.
+
+`data/` sengaja **tidak** dimasukkan ke dalam git — ia menyimpan nama
+pembayar dan rekod sebenar.
+
+---
+
+## Versi
+
+Nombor versi ada dalam `zakat/versi.py`, dan setiap perubahan penting
+dicatat dalam `CHANGELOG.md`.
+
+- **MAJOR** naik bila sesuatu yang lama tak berfungsi lagi (contoh: satu
+  feature dibuang)
+- **MINOR** naik bila ada tambahan baharu (contoh: satu gaya cetakan baharu)
+- **PATCH** naik bila baiki yang rosak sahaja (contoh: satu bug dibetulkan)
+
+Sebelum naikkan nombor, tanya dahulu: **adakah pengguna terpaksa ubah cara
+guna?** Kalau ya — MAJOR. Kalau tidak, tetapi ada benda baharu — MINOR.
+Kalau sekadar membaiki — PATCH.
 
 ---
 
