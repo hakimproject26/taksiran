@@ -1,6 +1,6 @@
 # Taksiran Zakat Pendapatan
 
-**Versi 2.0.0** (18/09/2026)
+**Versi 2.0.1** (18/09/2026)
 
 Kalkulator zakat pendapatan berasaskan terminal untuk Termux (Android).
 

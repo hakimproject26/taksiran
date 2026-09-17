@@ -12,6 +12,33 @@ Ukurannya bukan berapa banyak kerja, tapi berapa besar kesannya pada pengguna.
 
 ---
 
+## [2.0.1] — 18/09/2026
+
+Baris kepala jadual qadha dipagari garis atas dan bawah.
+
+**Dibaiki:**
+
+- **Baris kepala jadual qadha tidak dapat dibezakan daripada baris
+  data.** `TAHUN KASAR NISAB ZAKAT` kelihatan sama seperti `2015 36,000
+  13,644 928` — mata terpaksa berhenti dan mengira. Ia kini dipagari
+  garis di atas dan di bawah
+
+**Sengaja tidak dibuat: bold.** Di dalam blok monospace WhatsApp,
+`*TAHUN*` **tidak** menjadi tebal — asterisk keluar sebagai aksara
+biasa, dan setiap sel bertambah dua aksara sehingga penjajaran runtuh.
+Garis tidak menambah lebar, jadi had 34 aksara kekal. Kalau tuan mahu
+kontras lebih kuat, `═` boleh gantikan `─` pada baris kepala — beritahu.
+
+**Nota versi:** ini PATCH, bukan MINOR — tiada keupayaan baharu dan
+tiada cara guna yang berubah. Kalau tuan rasa ia layak MINOR, beritahu.
+
+**Nota:** kenapa bukan 2.0.0? Versi 2.0.0 sudah pun dipasang di fon
+sebelum perubahan ini. Melabelkannya semula 2.0.0 bermakna dua kod
+berbeza berkongsi satu nombor, dan `kemas.semak()` akan berkata "sudah
+terkini" — perubahan itu takkan sampai ke fon langsung.
+
+---
+
 ## [2.0.0] — 18/09/2026
 
 Qadha Zakat — kira zakat tertunggak merentas banyak tahun, dengan nisab

@@ -13,17 +13,16 @@ pengguna. Buang satu feature = MAJOR, walaupun kerjanya sepuluh minit.
 Setiap kali nombor ini naik, catat sebabnya dalam CHANGELOG.md.
 """
 
-NOMBOR = "2.0.0"
+NOMBOR = "2.0.1"
 TARIKH = "18/09/2026"
 
 # Apa yang berubah pada versi SEMASA. Dipaparkan pada skrin Kemas Kini,
 # dan dihantar ke app lain melalui versi.json di pelayan.
 # Sejarah penuh ada dalam CHANGELOG.md.
 NOTA = [
-    "Menu [3] sekarang Qadha Zakat — Kadar & Tolakan pindah ke [7]",
-    "Nisab ikut tahun: kiraan qadha menilai setiap tahun dengan",
-    "nisab tahun itu, bukan dengan nisab hari ini",
-    "Rekod lama tak berubah — cetakan semulanya sama seperti asal",
+    "Cetakan qadha: baris kepala dipagari garis atas dan bawah,",
+    "supaya ia tidak lagi kelihatan sama dengan baris data",
+    "Tiada perubahan pada kiraan atau pada data tuan",
 ]
 
 
