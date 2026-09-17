@@ -1,6 +1,6 @@
 # Taksiran Zakat Pendapatan
 
-**Versi 2.0.1** (18/09/2026)
+**Versi 2.0.2** (18/09/2026)
 
 Kalkulator zakat pendapatan berasaskan terminal untuk Termux (Android).
 
@@ -323,8 +323,8 @@ Tahun yang dipilih tetapi belum diisi akan **dilangkau**, dan ia
 dinyatakan dalam skrin semak. Tahun yang **nisabnya** belum diisi pula
 menghalang kiraan — bukan dilangkau secara senyap.
 
-**Cetakan qadha** lain bentuknya daripada cetakan biasa: satu jadual per
-tahun, satu jumlah di bawahnya.
+**Cetakan qadha** lain bentuknya daripada cetakan biasa: satu blok kecil
+setiap tahun, satu jumlah di bawahnya.
 
 ```
 QADHA ZAKAT — RINGKASAN
@@ -332,22 +332,29 @@ Tahun: 2015 – 2026 (Masihi)
 Kadar: 2.577%
 Kaedah: B (dengan tolakan)
 
-Semua nilai dalam RM,
-dibundarkan ke ringgit terdekat.
-─────────────────────────────────
-TAHUN     KASAR    NISAB    ZAKAT
-─────────────────────────────────
-2015     36,000   13,644      928
+Semua nilai dalam RM.
+
+2015  (nisab RM 13,644.28)
+kasar  36,000.00 | zakat   927.72
+
 ...
 Tahun tak cukup nisab: 2018
   (dikecualikan dari jumlah)
-Jumlah zakat        RM 25,893
+Jumlah zakat        RM 25,893.42
 ```
 
-Baris kepala dipagari garis atas dan bawah. Ini **pengganti bold**: di
-dalam blok monospace WhatsApp, `*TAHUN*` tidak menjadi tebal — asterisk
-keluar sebagai aksara biasa, dan setiap sel bertambah dua aksara sehingga
-penjajaran runtuh. Garis tidak menambah lebar, jadi had 34 aksara kekal.
+Setiap tahun mengambil **tiga baris** — tahun + nisabnya, kasar + zakat,
+dan satu baris kosong sebagai pemisah. Ini bukan pilihan estetika: tiga
+lajur wang yang membawa sen tidak muat dalam satu baris tanpa lajur
+bercantum, dan lajur bercantum membaca sebagai satu nombor.
+
+**Angka tepat sampai sen — tiada pembundaran ke ringgit.** Sebabnya juga
+bukan estetika: jumlah di bawah dikira daripada nilai yang sama, jadi
+kalau setiap tahun digenapkan dahulu, jumlah itu tidak akan berjumlah
+dengan baris di atasnya, dan sesiapa yang menyemak dengan kalkulator
+akan nampak seolah-olah ada angka hilang. Zakat itu sendiri tetap
+digenapkan ke **sen terdekat** — 2.577% daripada 36,000 memang menghasilkan
+pecahan sen, dan tiada cara menulisnya tanpa memilih.
 
 Tahun di bawah nisab **tetap dipaparkan dengan angkanya** (doktrin yang
 sama seperti 1.2.1 — angka sebenar, bukan RM 0.00), tetapi ia

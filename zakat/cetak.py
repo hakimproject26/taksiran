@@ -434,21 +434,23 @@ def _menegak(hs, ev, nama, label_tahun, tarikh):
 
 # --------------------------------------------------------------- qadha
 
-# Jadual qadha: TAHUN, KASAR, NISAB, ZAKAT. Lebarnya 33 aksara — satu di
-# bawah LEBAR_MAKS, sebab aksara lebar pernah mengejutkan sebelum ini.
-_JADUAL = "{:<6}{:>9}{:>9}{:>9}"
-_LEBAR_JADUAL = 33
+# Setiap tahun mengambil tiga baris: satu untuk tahun + nisabnya, satu
+# untuk kasar + zakat, dan satu baris kosong sebagai pemisah. Bentuk ini
+# dipilih kerana tiga lajur wang yang tepat sampai sen tidak muat dalam
+# satu baris tanpa lajur bercantum.
+_LEBAR_KASAR = 10   # muat sampai 999,999.99
+_LEBAR_ZAKAT = 8    # muat sampai 99,999.99
 
 
-def _ribu(nilai):
-    """'13644.28' -> '13,644'.
+def _sen(nilai):
+    """'13644.28' -> '13,644.28'.
 
-    Jadual ini ruangnya sempit, jadi sen dibuang. Pembundaran dinyatakan
-    sekali di kepala jadual supaya jumlah di bawahnya tidak kelihatan
-    seperti salah tambah.
+    Tepat sampai sen — tiada pembundaran ke ringgit. Jumlah di bawah
+    jadual dikira daripada nilai yang SUDAH dikuantisasi ini, jadi ia
+    sentiasa berjumlah dengan baris di atasnya.
     """
-    d = Decimal(str(nilai)).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
-    return f"{d:,.0f}"
+    d = Decimal(str(nilai)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    return f"{d:,.2f}"
 
 
 def _pecah_senarai(item, lebar):
@@ -467,13 +469,23 @@ def _pecah_senarai(item, lebar):
 
 
 def qadha(baris, ev, nama, kaedah, tarikh):
-    """Cetakan qadha — satu jadual, satu jumlah.
+    """Cetakan qadha — tiga baris setiap tahun, satu jumlah.
 
     Bentuknya jauh berbeza daripada cetakan biasa: tiada tolakan
     dibentangkan (ia sama bagi setiap tahun), dan tiada "sebulan" (tiada
     makna dalam penyelesaian tunggakan). Yang penting di sini ialah
     setiap tahun dinilai dengan nisab TAHUN ITU, dan jumlahnya hanya
     mengira tahun yang cukup nisab.
+
+    Angka dipaparkan TEPAT sampai sen — tiada pembundaran ke ringgit.
+    Sebabnya bukan estetika: jumlah di bawah dikira daripada nilai yang
+    sama, jadi kalau setiap tahun digenapkan dahulu, jumlah itu tidak
+    akan berjumlah dengan baris di atasnya, dan pembaca yang menyemak
+    dengan kalkulator akan nampak seolah-olah ada angka hilang.
+
+    Itulah juga sebabnya setiap tahun mengambil dua baris: tiga lajur
+    wang yang membawa sen tidak muat dalam satu baris tanpa lajur
+    bercantum, dan lajur bercantum membaca sebagai satu nombor.
 
     Sengaja TIDAK dimasukkan ke dalam _PETA: gaya cetakan pilihan
     pengguna tidak sepatutnya boleh menghalakan kiraan qadha ke pencetak
@@ -500,19 +512,13 @@ def qadha(baris, ev, nama, kaedah, tarikh):
     L.append("Kaedah: A (tanpa tolakan)" if kaedah == "A"
              else "Kaedah: B (dengan tolakan)")
     L.append("")
-    L.append("Semua nilai dalam RM,")
-    L.append("dibundarkan ke ringgit terdekat.")
-    # Kepala dipagari garis atas dan bawah. Ini pengganti "bold": di
-    # dalam blok monospace WhatsApp, *TAHUN* keluar sebagai aksara
-    # biasa — bukan tebal — dan setiap sel bertambah dua aksara,
-    # meruntuhkan penjajaran.
-    L.append("─" * _LEBAR_JADUAL)
-    L.append(_JADUAL.format("TAHUN", "KASAR", "NISAB", "ZAKAT"))
-    L.append("─" * _LEBAR_JADUAL)
+    L.append("Semua nilai dalam RM.")
+    L.append("")
     for t, h in baris:
-        L.append(_JADUAL.format(t, _ribu(h.pendapatan_kasar),
-                                _ribu(h.nisab), _ribu(h.zakat_setahun)))
-    L.append("─" * _LEBAR_JADUAL)
+        L.append(f"{t}  (nisab RM {_sen(h.nisab)})")
+        L.append(f"kasar {_sen(h.pendapatan_kasar):>{_LEBAR_KASAR}}"
+                 f" | zakat {_sen(h.zakat_setahun):>{_LEBAR_ZAKAT}}")
+        L.append("")
 
     # Nota diletak betul-betul di sebelah jumlah, sebab di situlah
     # pembaca akan mengesani yang barisnya tak berjumlah.
@@ -528,7 +534,7 @@ def qadha(baris, ev, nama, kaedah, tarikh):
                                     LEBAR_MAKS - 2):
                 L.append("  " + b)
         L.append("  (dikecualikan dari jumlah)")
-    L.append(f"{'Jumlah zakat':<20}RM {_ribu(jumlah(baris))}")
+    L.append(f"{'Jumlah zakat':<20}RM {_sen(jumlah(baris))}")
     L.append("")
     L.append(f"Dikira pada {tarikh}")
     return _blok(L)

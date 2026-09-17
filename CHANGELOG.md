@@ -12,6 +12,40 @@ Ukurannya bukan berapa banyak kerja, tapi berapa besar kesannya pada pengguna.
 
 ---
 
+## [2.0.2] — 18/09/2026
+
+Cetakan qadha: angka tepat sampai sen, dan setiap tahun berdiri sendiri.
+
+**Diubah:**
+
+- **Pembundaran ke ringgit dibuang.** Dulu setiap tahun digenapkan ke
+  ringgit terdekat, jadi jumlah di bawahnya tidak berjumlah dengan baris
+  di atasnya — sesiapa yang menyemak dengan kalkulator nampak seolah-olah
+  ada angka hilang. Sekarang angka tepat sampai sen, dan jumlah itu
+  benar-benar jumlah
+- **Bentuk jadual diganti.** Dahulu satu jadual empat lajur; sekarang
+  setiap tahun mengambil tiga baris — tahun + nisabnya, kasar + zakat,
+  dan baris kosong sebagai pemisah. Sebabnya ruang: tiga lajur wang yang
+  membawa sen tidak muat dalam satu baris tanpa lajur bercantum, dan
+  lajur bercantum membaca sebagai satu nombor. Nisab kini muncul pada
+  baris tahunnya sendiri, jadi ia lebih jelas daripada satu lajur sempit
+- Nota "dibundarkan ke ringgit terdekat" dibuang — ia sudah tak benar
+
+**Tidak berubah:**
+
+- Zakat masih digenapkan ke **sen** terdekat (`ROUND_HALF_UP`). Ini bukan
+  pilihan reka bentuk — 2.577% daripada 36,000 memang menghasilkan
+  pecahan sen, dan tiada cara menulisnya tanpa memilih
+- Tahun di bawah nisab tetap dipaparkan dengan angkanya, dan tetap
+  dikecualikan daripada jumlah
+- Kiraan, tolakan, pemilihan tahun dan simpanan rekod: semuanya sama
+
+**Nota versi:** ini PATCH. Tiada keupayaan baharu dan tiada cara guna
+yang berubah — cuma rupa cetakan. Kalau tuan rasa ia layak MINOR,
+beritahu.
+
+---
+
 ## [2.0.1] — 18/09/2026
 
 Baris kepala jadual qadha dipagari garis atas dan bawah.
