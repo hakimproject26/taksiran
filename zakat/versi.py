@@ -13,17 +13,16 @@ pengguna. Buang satu feature = MAJOR, walaupun kerjanya sepuluh minit.
 Setiap kali nombor ini naik, catat sebabnya dalam CHANGELOG.md.
 """
 
-NOMBOR = "1.2.0"
+NOMBOR = "1.2.1"
 TARIKH = "17/09/2026"
 
 # Apa yang berubah pada versi SEMASA. Dipaparkan pada skrin Kemas Kini,
 # dan dihantar ke app lain melalui versi.json di pelayan.
 # Sejarah penuh ada dalam CHANGELOG.md.
 NOTA = [
-    "Peringatan nisab setiap suku (Jan, Apr, Jul, Okt)",
-    "Eksport semua data ke fail teks — Tetapan ▸ [5]",
-    "Menu utama dibahagi dua: KIRAAN dan APP",
-    "Kotak tak lagi pecah bila teks terlalu panjang",
+    "Nisab dinilai pada pendapatan kasar — zakat tetap wajib",
+    "walaupun Kaedah B jatuh bawah nisab selepas tolakan",
+    "Angka zakat dipaparkan walau tak cukup nisab",
 ]
 
 

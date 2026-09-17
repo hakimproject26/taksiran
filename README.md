@@ -1,6 +1,6 @@
 # Taksiran Zakat Pendapatan
 
-**Versi 1.2.0** (17/09/2026)
+**Versi 1.2.1** (17/09/2026)
 
 Kalkulator zakat pendapatan berasaskan terminal untuk Termux (Android).
 
@@ -92,8 +92,8 @@ emas semasa dan negeri masing-masing — nilai lalai hanyalah placeholder.
 
 Nisab berubah ikut harga emas, dan ia menentukan sama ada zakat wajib
 dibayar langsung. Kalau nilai dalam app terlalu tinggi, app akan berkata
-*"tak cukup nisab — RM 0.00"* sedangkan zakat sebenarnya wajib. Itu bukan
-sekadar angka salah — ia boleh menyebabkan seseorang terlepas membayar.
+*"tak cukup nisab"* sedangkan zakat sebenarnya wajib. Itu bukan sekadar
+angka salah — ia boleh menyebabkan seseorang terlepas membayar.
 
 Sebab itu app menyimpan tarikh nisab kali terakhir disahkan, dan
 mengingatkan setiap **suku** — Januari, April, Julai, Oktober.
@@ -210,8 +210,33 @@ Pada langkah **Tahun**, tekan Enter sahaja untuk guna tahun semasa
 (contoh 2026 untuk Masihi, atau tahun Hijrah anggaran). Taip tahun lain
 kalau nak kiraan tahun lain.
 
-Kedua-dua kaedah dikenakan nisab. Kalau asas yang dikenakan zakat kurang
-daripada nisab, zakat ialah **RM 0.00**.
+#### Nisab dinilai pada pendapatan kasar
+
+Nisab dikenakan pada **pendapatan kasar** — asas Kaedah A — bukan pada
+asas selepas tolakan. Ia dinilai sekali sahaja, dan keputusan yang sama
+dipakai untuk kedua-dua kaedah.
+
+Ini penting pada satu keadaan: kasar sudah cukup nisab, tetapi asas
+Kaedah B jatuh bawah nisab selepas tolakan. Dalam keadaan itu **zakat
+tetap wajib** — nisab sudah dipenuhi oleh pendapatan itu sendiri. Kalau
+nisab dinilai per kaedah, app akan berkata *"tak cukup nisab"* sedangkan
+zakat sebenarnya wajib, dan pembayar terlepas membayar.
+
+Sebaliknya, kalau kasar sendiri belum cukup nisab, maka tiada zakat
+wajib — walau kaedah mana dipilih.
+
+Angka zakat dipaparkan dalam kedua-dua keadaan, bukan dikosongkan. Satu
+nota menyatakan sama ada ia wajib. Kalau angka dikosongkan jadi RM 0.00,
+kiraan yang hampir cukup nisab kelihatan sama dengan kiraan yang jauh di
+bawahnya.
+
+| Keadaan | Wajib? | Contoh |
+|---|---|---|
+| Kasar ≥ nisab, asas B ≥ nisab | Ya | biasa |
+| Kasar ≥ nisab, asas B < nisab | **Ya** | kasar 40,000 / nisab 34,000 / asas B 5,600 |
+| Kasar < nisab | Tidak | kasar 30,000 / nisab 34,000 |
+
+Kes kedua itulah yang dibetulkan pada 1.2.1.
 
 Kalau pilih Kaedah A, hasil menunjuk Kaedah A sahaja.
 Kalau pilih Kaedah B, hasil menunjuk **kedua-dua** Kaedah A dan B.

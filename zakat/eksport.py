@@ -59,6 +59,10 @@ def _satu_hasil(h):
         L.append(_baris("  Kena zakat", _duit(h.get("kena_zakat", 0))))
 
     L.append(_baris("  Nisab", _duit(h.get("nisab", 0))))
+    # Ayat neutral dengan sengaja. Rekod lama menyimpan bendera ini
+    # mengikut kaedah masing-masing, rekod baharu mengikut pendapatan
+    # kasar — jadi ayat yang mendakwa "tidak wajib" akan salah bagi
+    # sebahagian rekod lama.
     L.append("    " + ("cukup nisab" if h.get("cukup_nisab")
                        else "TAK cukup nisab"))
     L.append(_baris("  Kadar", f"{h.get('kadar', 0)} %"))

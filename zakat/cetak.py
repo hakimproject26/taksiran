@@ -71,6 +71,20 @@ def _duit_baris(label, nilai, lebar_label, lebar_duit):
     return f"{label:<{lebar_label}}{rm_pendek(nilai):>{lebar_duit}}"
 
 
+def _tak_wajib(hs):
+    """Adakah nota "tak cukup nisab" perlu keluar?
+
+    Nisab dinilai pada PENDAPATAN KASAR, iaitu asas Kaedah A — bukan pada
+    asas selepas tolakan. hs[0] sentiasa Kaedah A, dan kedua-dua kaedah
+    berkongsi keputusan nisab yang sama.
+
+    Jadi nota ini keluar SEKALI sahaja untuk seluruh cetakan, dan tidak
+    pernah keluar semata-mata sebab Kaedah B jatuh bawah nisab selepas
+    tolakan — dalam keadaan itu zakat tetap wajib.
+    """
+    return not hs[0].cukup_nisab
+
+
 # ------------------------------------------------------------------ mono
 
 def _mono(hs, ev, nama, label_tahun, tarikh):
@@ -89,6 +103,8 @@ def _mono(hs, ev, nama, label_tahun, tarikh):
     L.append(f"Tahun: {label_tahun}")
     L.append(f"Kadar: {h0.kadar:.3f}%")
     L.append(f"Nisab: {rm_pendek(h0.nisab)}")
+    if _tak_wajib(hs):
+        L.append("(tak cukup nisab — tak wajib)")
     L.append("")
     L.append("PENDAPATAN KASAR")
     if h0.sumber_kasar:
@@ -113,8 +129,6 @@ def _mono(hs, ev, nama, label_tahun, tarikh):
                                  LEBAR_LABEL, LEBAR_DUIT))
         L.append(f"{rm_pendek(h.kena_zakat)} × {h.kadar:.3f}%")
         L.append(f"= {rm_pendek(h.zakat_setahun)}")
-        if not h.cukup_nisab:
-            L.append("(tak cukup nisab)")
         L.append(f"Setahun: {rm_pendek(h.zakat_setahun)}")
         L.append(f"Sebulan: {rm_pendek(h.zakat_sebulan)}")
         L.append("")
@@ -144,6 +158,8 @@ def _baris(hs, ev, nama, label_tahun, tarikh):
         L.append(f"Nama: {nama}")
     L.append(f"Tahun: {label_tahun} | Kadar: {h0.kadar:.3f}%")
     L.append(f"Nisab: {rm(h0.nisab)}")
+    if _tak_wajib(hs):
+        L.append("⚠ Tak cukup nisab — zakat tidak wajib")
     L.append("")
     L.append("*PENDAPATAN KASAR SETAHUN*")
     if h0.sumber_kasar:
@@ -170,8 +186,6 @@ def _baris(hs, ev, nama, label_tahun, tarikh):
             L.append(f"= {rm(h.kena_zakat)}")
         L.append(f"{rm(h.kena_zakat)} × {h.kadar:.3f}%")
         L.append(f"= {rm(h.zakat_setahun)}")
-        if not h.cukup_nisab:
-            L.append("(tak cukup nisab — zakat RM 0.00)")
         L.append(f"Setahun {rm(h.zakat_setahun)} | Sebulan {rm(h.zakat_sebulan)}")
         L.append("")
 
@@ -202,10 +216,10 @@ def _ringkas(hs, ev, nama, label_tahun, tarikh):
         L.append(f"Tolakan: {rm(hb.jumlah_tolakan)}")
         L.append(f"Kena zakat: {rm(hb.kena_zakat)}")
     L.append("")
+    if _tak_wajib(hs):
+        L.append("⚠ Tak cukup nisab — zakat tidak wajib")
     for h in hs:
         L.append(f"*KAEDAH {h.kaedah}*")
-        if not h.cukup_nisab:
-            L.append(f"Tak cukup nisab — zakat {rm(0)}")
         L.append(f"{rm(h.zakat_setahun)} setahun")
         L.append(f"{rm(h.zakat_sebulan)} sebulan")
         L.append("")
@@ -239,6 +253,8 @@ def _titik_gaya(hs, ev, nama, label_tahun, tarikh):
     L.append(f"Tahun : {label_tahun}")
     L.append(f"Kadar : {h0.kadar:.3f}%")
     L.append(f"Nisab : {rm_pendek(h0.nisab)}")
+    if _tak_wajib(hs):
+        L.append("(tak cukup nisab — tak wajib)")
     L.append(garisan("═"))
     L.append("")
     L.append("PENDAPATAN KASAR")
@@ -263,8 +279,6 @@ def _titik_gaya(hs, ev, nama, label_tahun, tarikh):
             L.append(titik("Kena zakat", rm_pendek(h.kena_zakat)))
         L.append(f"{rm_pendek(h.kena_zakat)} × {h.kadar:.3f}%")
         L.append(f"= {rm_pendek(h.zakat_setahun)}")
-        if not h.cukup_nisab:
-            L.append("(tak cukup nisab)")
         L.append(titik("Setahun", rm_pendek(h.zakat_setahun)))
         L.append(titik("Sebulan", rm_pendek(h.zakat_sebulan)))
         L.append("")
@@ -320,6 +334,10 @@ def _kotak(hs, ev, nama, label_tahun, tarikh):
     baris(f"Tahun : {label_tahun}")
     baris(f"Kadar : {h0.kadar:.3f}%")
     baris(f"Nisab : {rm_pendek(h0.nisab)}")
+    if _tak_wajib(hs):
+        # Dua baris pendek — kandungan kotak hanya 26 aksara.
+        baris("TAK CUKUP NISAB")
+        baris("ZAKAT TAK WAJIB")
     pisah()
 
     for h in hs:
@@ -342,8 +360,6 @@ def _kotak(hs, ev, nama, label_tahun, tarikh):
                           LEBAR_LABEL, LEBAR_DUIT))
         baris(_duit_baris("Sebulan", h.zakat_sebulan,
                           LEBAR_LABEL, LEBAR_DUIT))
-        if not h.cukup_nisab:
-            baris("TAK CUKUP NISAB")
         pisah()
 
     baris("JUMLAH ZAKAT")
@@ -382,6 +398,8 @@ def _menegak(hs, ev, nama, label_tahun, tarikh):
     pasang("Tahun", label_tahun)
     pasang("Kadar", f"{h0.kadar:.3f}%")
     pasang("Nisab", rm_pendek(h0.nisab))
+    if _tak_wajib(hs):
+        L.append("  (tak cukup nisab — tak wajib)")
     L.append("")
     L.append("PENDAPATAN KASAR")
     if h0.sumber_kasar:
@@ -400,8 +418,6 @@ def _menegak(hs, ev, nama, label_tahun, tarikh):
             pasang("Kena zakat", rm_pendek(h.kena_zakat))
         L.append(_potong(f"  {rm_pendek(h.kena_zakat)} × {h.kadar:.3f}%"))
         L.append(f"  = {rm_pendek(h.zakat_setahun)}")
-        if not h.cukup_nisab:
-            L.append("  (tak cukup nisab)")
         pasang("Setahun", rm_pendek(h.zakat_setahun))
         pasang("Sebulan", rm_pendek(h.zakat_sebulan))
         L.append("")

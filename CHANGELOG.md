@@ -12,6 +12,36 @@ Ukurannya bukan berapa banyak kerja, tapi berapa besar kesannya pada pengguna.
 
 ---
 
+## [1.2.1] — 17/09/2026
+
+Nisab dinilai pada pendapatan kasar, bukan pada asas selepas tolakan.
+
+**Dibaiki:**
+
+- **Zakat dikatakan tak wajib sedangkan ia wajib.** Sebelum ini nisab
+  dinilai berasingan bagi setiap kaedah. Akibatnya, apabila pendapatan
+  kasar sudah cukup nisab tetapi asas Kaedah B jatuh bawah nisab selepas
+  tolakan, app berkata *"tak cukup nisab — RM 0.00"* dan pembayar
+  terlepas membayar zakat yang sebenarnya wajib. Sekarang nisab dinilai
+  **sekali**, pada pendapatan kasar (asas Kaedah A), dan keputusan yang
+  sama diberi kepada kedua-dua kaedah
+- **Angka zakat dipaparkan walaupun tak cukup nisab.** Dulu hasilnya
+  dikosongkan jadi RM 0.00. Sekarang angka sebenar keluar, dan satu nota
+  menyatakan sama ada ia wajib — supaya kiraan yang hampir cukup nisab
+  tidak kelihatan sama dengan kiraan yang jauh di bawahnya
+- Nota "tak cukup nisab" keluar **sekali sahaja** bagi seluruh cetakan,
+  dan tidak pernah keluar semata-mata sebab Kaedah B jatuh bawah nisab
+
+**Tidak berubah:** rekod sejarah lama dicetak semula tepat seperti
+asalnya, termasuk bendera nisab yang disimpan mengikut kaedah masing-
+masing. Cetakan semula tidak senyap-senyap berubah.
+
+**Nota versi:** ini PATCH, bukan MINOR — tiada keupayaan baharu dan tiada
+cara guna yang berubah, cuma membetulkan keputusan yang salah. Kalau tuan
+rasa perubahan angka ini cukup besar untuk dilabel MINOR, beritahu.
+
+---
+
 ## [1.2.0] — 17/09/2026
 
 Peringatan nisab, eksport data, dan menu utama yang tersusun.

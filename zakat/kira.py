@@ -6,8 +6,19 @@ Kaedah A — tanpa tolakan:
 Kaedah B — dengan tolakan:
     zakat = (pendapatan kasar - jumlah tolakan) x kadar
 
-Kedua-dua kaedah dikenakan nisab. Kalau asas yang dikenakan zakat
-kurang daripada nisab, zakat ialah RM 0.00.
+NISAB DINILAI PADA PENDAPATAN KASAR — asas Kaedah A — bukan pada asas
+selepas tolakan. Ini penting pada dua keadaan:
+
+  * Kasar sudah cukup nisab, tetapi asas Kaedah B jatuh bawah nisab
+    selepas tolakan. Zakat TETAP wajib, sebab nisab sudah dipenuhi oleh
+    pendapatan itu sendiri. Kalau dinilai per kaedah, app akan kata
+    "tak cukup nisab" sedangkan zakat sebenarnya wajib — orang terlepas
+    membayar.
+  * Kasar belum cukup nisab. Maka tiada zakat wajib, walau kaedah mana
+    dipilih (asas Kaedah B sudah tentu lebih rendah).
+
+Nilai zakat dikira dalam kedua-dua keadaan — angka sebenar dipaparkan,
+bukan dikosongkan. Yang membezakan wajib atau tidak ialah `cukup_nisab`.
 """
 
 from decimal import Decimal, ROUND_HALF_UP
@@ -16,6 +27,15 @@ from decimal import Decimal, ROUND_HALF_UP
 def sen(d):
     """Bundar ke 2 tempat perpuluhan."""
     return Decimal(str(d)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def wajib_zakat(pendapatan_kasar, nisab):
+    """Adakah zakat wajib? Dinilai pada pendapatan kasar sahaja.
+
+    Dipanggil sekali dalam satu kiraan, dan hasilnya diberi kepada
+    KEDUA-DUA kaedah — supaya A dan B tak mungkin bercanggah.
+    """
+    return Decimal(str(pendapatan_kasar)) >= Decimal(str(nisab))
 
 
 class Tolakan:
@@ -60,11 +80,16 @@ class Hasil:
         if self.kena_zakat < 0:
             self.kena_zakat = Decimal("0")
 
-        self.cukup_nisab = self.kena_zakat >= self.nisab
-        if self.cukup_nisab:
-            self.zakat_setahun = sen(self.kena_zakat * self.kadar / 100)
-        else:
-            self.zakat_setahun = Decimal("0.00")
+        # Dinilai pada pendapatan kasar, bukan pada `kena_zakat` di atas.
+        # Kaedah A dan B membawa pendapatan kasar yang SAMA, jadi kedua-
+        # duanya sampai pada keputusan yang sama tanpa perlu diselaraskan.
+        self.cukup_nisab = wajib_zakat(self.pendapatan_kasar, self.nisab)
+
+        # Dikira walau tak cukup nisab — angka sebenar dipaparkan, tidak
+        # dikosongkan. Pembaca nampak berapa, dan nota menyatakan sama ada
+        # ia wajib. Kalau dikosongkan, kiraan yang hampir cukup nisab
+        # kelihatan sama dengan kiraan yang jauh di bawahnya.
+        self.zakat_setahun = sen(self.kena_zakat * self.kadar / 100)
         self.zakat_sebulan = sen(self.zakat_setahun / 12)
 
     def ringkas(self):
@@ -99,6 +124,11 @@ class Hasil:
         Nilai yang tersimpan dipulihkan terus, TIDAK dikira semula — supaya
         cetakan semula sentiasa sama dengan cetakan asal, dan rekod lama
         (yang tak simpan butiran tolakan) tetap keluar jumlah yang betul.
+
+        Ini termasuk `cukup_nisab`. Rekod yang dibuat sebelum nisab dinilai
+        pada pendapatan kasar menyimpan bendera itu mengikut kaedah masing-
+        masing, dan ia sengaja dibiarkan begitu — cetakan semula rekod lama
+        mesti sama dengan cetakan asalnya, bukan senyap-senyap berubah.
         """
         tolak = [
             Tolakan(t["label"], t["nilai"], t.get("nota", ""),

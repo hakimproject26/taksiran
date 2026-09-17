@@ -189,8 +189,11 @@ def alir_kaedah_b(cfg):
     label_tahun, kadar = thn
     nisab = Decimal(str(cfg["nisab"]))
 
-    hasil_b = kira_kaedah_b(kasar, kadar, nisab, tolakan, nota)
+    # Nisab dinilai pada pendapatan kasar, bukan pada asas selepas tolakan
+    # (lihat zakat/kira.py). Jadi Kaedah B tetap wajib walau asasnya jatuh
+    # bawah nisab selepas tolakan.
     hasil_a = kira_kaedah_a(kasar, kadar, nisab, nota)
+    hasil_b = kira_kaedah_b(kasar, kadar, nisab, tolakan, nota)
     skrin_hasil([hasil_a, hasil_b], label_tahun)
 
 
@@ -202,6 +205,11 @@ def _baris_hasil(hasil_senarai, label_tahun):
         ui.baris_kv(f"Tahun {label_tahun}", f"Kadar  {h0.kadar:.3f}%", DALAM),
         ui.baris_kv("Nisab", ui.rm(h0.nisab), DALAM),
     ]
+    # Satu baris sahaja, dan ia ikut pendapatan kasar. Kalau Kaedah A
+    # cukup nisab, tiada nota langsung — walaupun Kaedah B jatuh bawah
+    # nisab selepas tolakan.
+    L.append("  ✓ cukup nisab" if h0.cukup_nisab
+             else "  ✗ pendapatan kasar tak cukup nisab — zakat tidak wajib")
     for h in hasil_senarai:
         tajuk = ("KAEDAH A ─ TANPA TOLAKAN" if h.kaedah == "A"
                  else "KAEDAH B ─ DENGAN TOLAKAN")
@@ -216,7 +224,6 @@ def _baris_hasil(hasil_senarai, label_tahun):
             L.append(ui.baris_kv("  Jumlah tolakan", ui.rm(h.jumlah_tolakan), DALAM))
             L.append(ui.baris_kv("  Kena zakat", ui.rm(h.kena_zakat), DALAM))
 
-        L.append("  " + ("✓ cukup nisab" if h.cukup_nisab else "✗ tak cukup nisab"))
         L.append("")
         L.append(ui.baris_kv("  Zakat setahun", ui.rm(h.zakat_setahun), DALAM))
         L.append(ui.baris_kv("  Zakat sebulan", ui.rm(h.zakat_sebulan), DALAM))
