@@ -3,6 +3,7 @@
 import os
 import shutil
 import subprocess
+import textwrap
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 
@@ -51,7 +52,12 @@ def baris_kv(kiri, kanan, lebar):
 
 
 def kotak(baris, lebar=52, tajuk=None):
-    """Lukis kotak sekeliling senarai baris (teks biasa)."""
+    """Lukis kotak sekeliling senarai baris (teks biasa).
+
+    Baris yang terlalu panjang dibalut, bukan dibiarkan menembus dinding
+    kotak. Tanpa ini, satu nama event yang panjang sudah cukup untuk
+    merosakkan seluruh kotak.
+    """
     dalam = lebar - 2
     if tajuk:
         atas = "╭─ " + tajuk + " " + "─" * max(0, dalam - len(tajuk) - 3) + "╮"
@@ -60,7 +66,13 @@ def kotak(baris, lebar=52, tajuk=None):
     bawah = "╰" + "─" * dalam + "╯"
     keluar = [atas]
     for b in baris:
-        keluar.append("│ " + pad(b, dalam - 2) + " │")
+        # break_long_words dibiarkan lalai (True). Ia hanya memotong
+        # perkataan yang SENDIRI lebih panjang daripada lebar kotak —
+        # perkataan biasa tak pernah dipotong. Tanpa ini, satu rentetan
+        # panjang tanpa ruang (nama, alamat) akan menembus dinding.
+        for serpihan in (textwrap.wrap(b, width=dalam - 2,
+                                       break_on_hyphens=False) or [""]):
+            keluar.append("│ " + pad(serpihan, dalam - 2) + " │")
     keluar.append(bawah)
     return "\n".join(keluar)
 

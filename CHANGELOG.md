@@ -12,6 +12,39 @@ Ukurannya bukan berapa banyak kerja, tapi berapa besar kesannya pada pengguna.
 
 ---
 
+## [1.2.0] — 17/09/2026
+
+Peringatan nisab, eksport data, dan menu utama yang tersusun.
+
+**Ditambah:**
+
+- **Peringatan nisab setiap suku** — Januari, April, Julai, Oktober. App
+  menyimpan tarikh nisab kali terakhir disahkan, dan mengingatkan apabila
+  suku baharu bermula
+- Amaran nisab muncul di **menu utama**, di **skrin hasil**, dan sekali lagi
+  **sebelum cetakan keluar** — di situ ia boleh dibatalkan
+- `[3] Kadar & Tolakan ▸ [N]` — tanda nisab sudah disahkan tanpa perlu
+  menaip nilai semula, kerana nisab selalunya tidak berubah
+- **`Tetapan ▸ [5] Eksport data`** — tulis semua tetapan, event dan rekod
+  sejarah ke satu fail teks dalam `$HOME` (bukan dalam folder app, supaya ia
+  terselamat walau app dipasang semula). Salinannya juga masuk clipboard
+- Menu utama dibahagi dua kumpulan: **KIRAAN** (1, 2, 3, 5) dan
+  **APP** (4, 6). Nombornya tidak berubah
+
+**Dibaiki:**
+
+- **Kotak pecah bila teks terlalu panjang.** Satu nama event yang panjang
+  sudah cukup untuk menembus dinding kotak — pepijat ini sudah ada sejak
+  awal, bukan daripada perubahan ini. `ui.kotak()` sekarang membalut teks
+
+**Sengaja tidak dibuat:** cetakan WhatsApp kekal tanpa amaran nisab. Setiap
+gaya cetakan ada had aksara yang ketat (30–34), dan baris tambahan akan
+terpotong atau merosakkan susun atur. Amaran diberi dalam app sebelum cetak
+— di situ ia masih boleh dibatalkan. Kalau tuan mahu ia masuk ke cetakan
+juga, beritahu.
+
+---
+
 ## [1.1.0] — 17/09/2026
 
 Kemas kini dari dalam app. Tuan tak perlu buka terminal dan taip `curl` lagi.

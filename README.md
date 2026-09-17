@@ -1,6 +1,6 @@
 # Taksiran Zakat Pendapatan
 
-**Versi 1.1.0** (17/09/2026)
+**Versi 1.2.0** (17/09/2026)
 
 Kalkulator zakat pendapatan berasaskan terminal untuk Termux (Android).
 
@@ -60,6 +60,24 @@ pkg install termux-api
 
 ## Cara guna
 
+Menu utama dibahagi dua kumpulan:
+
+```
+  ── KIRAAN ─────────────────
+  [1]  Kira Zakat
+  [2]  Daftar
+  [3]  Kadar & Tolakan
+  [5]  Sejarah Kiraan
+
+  ── APP ────────────────────
+  [4]  Tetapan
+  [6]  Kemas Kini
+```
+
+**KIRAAN** ialah kerja harian — mengira dan mencetak. **APP** ialah urusan
+app itu sendiri — tetapan, dan mengemas kini dirinya. Nombor menu tidak
+berubah; cuma susunannya diasingkan.
+
 ### 1. Daftar (pilihan)
 
 Isi nama event, tarikh, dan tempat. Info ini akan naik pada setiap print.
@@ -70,10 +88,40 @@ Kalau tak diisi, print tetap keluar tanpa blok event.
 Semua nilai boleh diubah di sini. **Nisab mesti dikemas kini** ikut harga
 emas semasa dan negeri masing-masing — nilai lalai hanyalah placeholder.
 
+#### Peringatan nisab
+
+Nisab berubah ikut harga emas, dan ia menentukan sama ada zakat wajib
+dibayar langsung. Kalau nilai dalam app terlalu tinggi, app akan berkata
+*"tak cukup nisab — RM 0.00"* sedangkan zakat sebenarnya wajib. Itu bukan
+sekadar angka salah — ia boleh menyebabkan seseorang terlepas membayar.
+
+Sebab itu app menyimpan tarikh nisab kali terakhir disahkan, dan
+mengingatkan setiap **suku** — Januari, April, Julai, Oktober.
+
+Amaran muncul di tiga tempat:
+
+| Di mana | Bila |
+|---|---|
+| Menu utama | Kotak amaran bila suku baharu bermula |
+| Skrin hasil | Satu baris kuning di bawah kiraan |
+| Sebelum cetak | Boleh dibatalkan sebelum teks keluar |
+
+Untuk membersihkan amaran: sahkan nisab negeri tuan, kemas kini nilai
+`[3] Nisab` kalau ia berubah, kemudian tekan **[N]** untuk tanda sudah
+disahkan. Nisab selalunya tidak berubah, jadi `[N]` ada supaya tuan tak
+perlu menaip nilai yang sama semula.
+
+Tarikh pengesahan terakhir tertera dalam kotak menu ini.
+
+**Cetakan WhatsApp sengaja tidak diberi amaran nisab.** Setiap gaya
+cetakan ada had aksara yang ketat (30–34), dan baris tambahan akan
+terpotong atau merosakkan susun atur. Amaran diberi dalam app sebelum
+cetak — di situ ia masih boleh dibatalkan.
+
 ### 3. Tetapan — gaya output print
 
 WhatsApp guna **font berkadar**, bukan monospace. Jadi penjajaran lajur
-hanya kekal kalau teks dibalut dalam blok ` ``` `. Sebab itu ada lima gaya:
+hanya kekal kalau teks dibalut dalam blok ` ``` `. Sebab itu ada enam gaya:
 
 | Gaya | Rupa | Had lebar |
 |---|---|---|
@@ -100,6 +148,16 @@ lain masih sentuh tepi. Ia paling panjang ke bawah.
 sendiri ikut perkataan, jadi ia tak pernah berlanggar tepi.
 
 Setiap gaya ada **pratonton** — tuan nampak dulu sebelum simpan.
+
+#### Menu Tetapan
+
+| Menu | Guna |
+|---|---|
+| `[1]` | Pilih gaya output print (dengan pratonton) |
+| `[2]` | README — catatan pembinaan app ini |
+| `[3]` | Sumber kemas kini — alamat pelayan |
+| `[4]` | Semak kemas kini semasa buka: Ya / Tidak |
+| `[5]` | Eksport data ke fail teks |
 
 ### README di dalam app
 
@@ -221,6 +279,29 @@ cd ~/serve-zakat && python3 -m http.server 8000 --bind 0.0.0.0 --directory .
 > menjalankannya. Untuk pelayan dalam rangkaian sendiri ini memadai. Kalau
 > ia diletak di internet, ini lubang sebenar dan perlu difikir semula.
 
+### 8. Eksport data
+
+`Tetapan ▸ [5] Eksport data` menulis **semua** tetapan, event dan rekod
+sejarah ke satu fail teks yang boleh dibaca manusia — bukan JSON mentah,
+supaya tuan boleh buka dan sahkan isinya sendiri.
+
+Fail ditulis ke folder utama Termux (`$HOME`), **bukan** dalam folder app.
+Ini disengajakan: kalau app dipasang semula atau folder app dipadam, fail
+eksport masih selamat.
+
+```
+~/taksiran-eksport-20260917-2320.txt
+```
+
+Salinannya juga dimasukkan ke clipboard, jadi boleh terus tampal ke e-mel
+atau nota.
+
+> **Fail ini mengandungi nama pembayar sebenar.** Simpan di tempat yang
+> selamat. Sebab itulah `data/` dan fail eksport tidak pernah masuk git.
+
+**Import tidak disediakan.** Buat masa ini eksport untuk backup dan
+rujukan sahaja. Kalau tuan perlukan import semula, beritahu.
+
 ---
 
 ## Struktur
@@ -237,6 +318,8 @@ taksiran/
 │   ├── cetak.py         jana teks WhatsApp
 │   ├── readme.py        catatan pembinaan
 │   ├── kemas.py         enjin kemas kini
+│   ├── nisab.py         peringatan suku nisab
+│   ├── eksport.py       eksport data ke teks
 │   └── versi.py         nombor versi
 ├── data/                terhasil sendiri
 │   ├── config.json      kadar, nisab, tolakan

@@ -17,6 +17,9 @@ CONFIG_LALAI = {
     "tolakan_anak_a": 2000,
     "tolakan_anak_b": 1000,
     "gaya": "mono",
+    # Tarikh (YYYY-MM-DD) nisab kali terakhir disahkan dengan pihak zakat.
+    # Kosong bermakna belum pernah — app akan mengingatkan setiap suku.
+    "nisab_dikemas": "",
     # Alamat pelayan kemas kini. Boleh ditukar di Tetapan ▸ [3].
     "sumber_kemas": "http://10.94.149.204:8000",
     # Semak versi baharu setiap kali app dibuka. Boleh dimatikan kalau

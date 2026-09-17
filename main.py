@@ -8,7 +8,7 @@ import threading
 from datetime import date, datetime
 from decimal import Decimal
 
-from zakat import cetak, kemas, readme, store, ui, versi
+from zakat import cetak, eksport, kemas, nisab, readme, store, ui, versi
 from zakat.kira import Hasil, Tolakan, kira_kaedah_a, kira_kaedah_b
 
 LEBAR = 52
@@ -239,6 +239,11 @@ def skrin_hasil(hasil_senarai, label_tahun):
         print()
         print(ui.kotak(_baris_hasil(hasil_senarai, label_tahun), LEBAR))
         print()
+        pesan_nisab = nisab.mesej_ringkas(store.config())
+        if pesan_nisab:
+            print(ui.warna("  ⚠ " + pesan_nisab, ui.W.KUNING))
+            print(ui.warna("    Betulkan di [3] Kadar & Tolakan.", ui.W.MALAP))
+            print()
         print("  [P] Print / Salin    [S] Simpan    [0] Menu")
         pilih = ui.tanya_pilih({"p", "s", "0"}, "\n  pilih ▸ ")
         if pilih is None or pilih == "0":
@@ -259,6 +264,18 @@ def skrin_cetak(hasil_senarai, label_tahun):
     if nama is None:
         return
     nama = nama.strip()
+
+    # Amaran terakhir sebelum teks keluar — selepas ini ia dihantar kepada
+    # pembayar, dan angka yang salah sukar ditarik balik.
+    pesan_nisab = nisab.mesej_ringkas(store.config())
+    if pesan_nisab:
+        print()
+        print(ui.warna("  ⚠ " + pesan_nisab, ui.W.KUNING))
+        print(ui.warna("    Cetakan ini akan keluar dengan nisab itu.", ui.W.KUNING))
+        print()
+        print("  [ENTER] teruskan    [0] batal")
+        if ui.tanya_pilih({"", "0"}, "  pilih ▸ ") == "0":
+            return
 
     teks = cetak.jana(
         hasil_senarai, store.event(), nama, label_tahun,
@@ -389,6 +406,11 @@ def menu_kadar():
             ui.baris_kv("Kadar Hijrah", f"{cfg['kadar_hijrah']:.3f}%", DALAM),
             "",
             ui.baris_kv("Nisab", ui.rm(cfg["nisab"]), DALAM),
+            ui.baris_kv(
+                "  dikemas kini",
+                nisab.baca_tarikh(cfg).strftime("%d/%m/%Y")
+                if nisab.baca_tarikh(cfg) else "(belum pernah)",
+                DALAM),
             "",
             ui.baris_kv("Tolakan diri", ui.rm(cfg["tolakan_diri"]), DALAM),
             ui.baris_kv("Tolakan isteri", ui.rm(cfg["tolakan_isteri"]), DALAM),
@@ -397,14 +419,30 @@ def menu_kadar():
             ui.baris_kv("Tolakan anak B", ui.rm(cfg["tolakan_anak_b"]), DALAM),
         ], LEBAR))
         print()
-        print("  [1-8] ubah   [R] reset ke lalai   [0] kembali")
-        pilih = ui.tanya_pilih({str(i) for i in range(1, 9)} | {"r", "0"},
+        if nisab.perlu_kemas(cfg)[0]:
+            print(ui.warna("  ⚠ " + nisab.mesej_ringkas(cfg), ui.W.KUNING))
+            print(ui.warna("    Sahkan nisab negeri tuan, kemas kini [3] kalau "
+                           "berubah,", ui.W.MALAP))
+            print(ui.warna("    kemudian tekan [N].", ui.W.MALAP))
+            print()
+        print("  [1-8] ubah   [N] nisab dah disahkan   [R] reset   [0] kembali")
+        pilih = ui.tanya_pilih({str(i) for i in range(1, 9)} | {"n", "r", "0"},
                                "\n  pilih ▸ ")
         if pilih is None or pilih == "0":
             return
+        if pilih == "n":
+            # Nilai nisab selalunya tidak berubah — jadi pengesahan mesti
+            # boleh dilakukan tanpa perlu menaip nilai semula.
+            store.simpan_config(nisab.tanda_dikemas(cfg))
+            print()
+            print(ui.warna("  ✓ nisab ditanda sudah disahkan pada "
+                           + tarikh_hari_ini(), ui.W.HIJAU))
+            ui.jeda()
+            continue
         if pilih == "r":
             store.reset_config()
             print(ui.warna("  ✓ ditetapkan semula", ui.W.HIJAU))
+            print(ui.warna("    (tarikh nisab dikosongkan juga)", ui.W.MALAP))
             ui.jeda()
             continue
 
@@ -416,6 +454,9 @@ def menu_kadar():
         if nilai is None:
             continue
         cfg[kunci] = int(nilai) if jenis == "int" else float(nilai)
+        if kunci == "nisab":
+            # Mengubah nilai nisab bermakna tuan baru menyemaknya.
+            nisab.tanda_dikemas(cfg)
         store.simpan_config(cfg)
         print(ui.warna("  ✓ disimpan", ui.W.HIJAU))
         ui.jeda()
@@ -483,9 +524,10 @@ def menu_tetapan():
         print("  [2]  README — sejarah app ini")
         print(f"  [3]  Sumber kemas kini   {ui.warna(cfg.get('sumber_kemas', '') or '(kosong)', ui.W.MALAP)}")
         print(f"  [4]  Semak semasa buka   {ui.warna('Ya' if cfg.get('semak_kemas', True) else 'Tidak', ui.W.MALAP)}")
+        print("  [5]  Eksport data ke fail teks")
         print("  [0]  Kembali")
         print()
-        pilih = ui.tanya_pilih({"1", "2", "3", "4", "0"}, "  pilih ▸ ")
+        pilih = ui.tanya_pilih({"1", "2", "3", "4", "5", "0"}, "  pilih ▸ ")
         if pilih is None or pilih == "0":
             return
         if pilih == "1":
@@ -517,6 +559,8 @@ def menu_tetapan():
                 print(ui.warna("  App tak akan semak sendiri lagi — guna "
                                "[6] Kemas Kini bila perlu.", ui.W.MALAP))
             ui.jeda()
+        elif pilih == "5":
+            skrin_eksport()
 
 
 # ---------------------------------------------------------------- readme
@@ -698,6 +742,72 @@ def menu_sejarah():
         skrin_cetak_rekod(tunjuk[int(pilih) - 1])
 
 
+# -------------------------------------------------------------- eksport
+
+def skrin_eksport():
+    """Simpan semua data ke satu fail teks — untuk backup."""
+    ui.bersih()
+    print()
+    print(ui.warna("  EKSPORT DATA", ui.W.TEBAL))
+    print(ui.garis(None, LEBAR))
+    print()
+
+    cfg = store.config()
+    rekod = store.sejarah()
+    ev = store.event()
+
+    print(f"  Tetapan, event, dan {len(rekod)} rekod sejarah akan")
+    print("  ditulis ke satu fail teks.")
+    print()
+    print(ui.warna("  Fail ini mengandungi nama pembayar.", ui.W.KUNING))
+    print(ui.warna("  Simpan di tempat yang selamat.", ui.W.KUNING))
+    print()
+    print("  [E] Eksport    [0] Kembali")
+    print()
+    if ui.tanya_pilih({"e", "0"}, "  pilih ▸ ") != "e":
+        return
+
+    teks = eksport.jana(cfg, ev, rekod)
+    laluan, ralat = eksport.tulis(teks)
+
+    ui.bersih()
+    print()
+    print(ui.warna("  EKSPORT DATA", ui.W.TEBAL))
+    print(ui.garis(None, LEBAR))
+    print()
+
+    if ralat:
+        print(ui.warna("  ✗ Gagal menulis fail", ui.W.MERAH))
+        print()
+        print(f"  {ralat}")
+        print()
+        print(ui.warna("  Cuba salin ke clipboard pula …", ui.W.MALAP))
+        print()
+        if eksport.salin_ke_clipboard(teks):
+            print(ui.warna("  ✓ disalin ke clipboard", ui.W.HIJAU))
+        else:
+            print(ui.warna("  ✗ clipboard pun tak tersedia", ui.W.MERAH))
+        print()
+        ui.jeda()
+        return
+
+    print(ui.warna("  ✓ fail disimpan", ui.W.HIJAU))
+    print()
+    print("  " + laluan)
+    print()
+    print(f"  {len(teks.splitlines())} baris, {len(teks) / 1024:.1f} KB")
+    print()
+
+    if eksport.salin_ke_clipboard(teks):
+        print(ui.warna("  ✓ salinannya juga ada dalam clipboard", ui.W.HIJAU))
+        print(ui.warna("    (boleh tampal ke e-mel atau nota)", ui.W.MALAP))
+    print()
+    print(ui.warna("  Untuk lihat isinya:", ui.W.MALAP))
+    print(ui.warna(f"    cat {laluan}", ui.W.MALAP))
+    print()
+    ui.jeda()
+
+
 # ---------------------------------------------------------------- kemas
 
 # Berapa lama menu utama sanggup tunggu jawapan pelayan sebelum ia naik
@@ -864,12 +974,27 @@ def menu_utama():
             ], LEBAR, tajuk="KEMAS KINI TERSEDIA"))
             print()
 
+        if nisab.perlu_kemas(cfg)[0]:
+            print(ui.kotak([
+                nisab.mesej_ringkas(cfg),
+                "",
+                "[3] Kadar & Tolakan",
+            ], LEBAR, tajuk="NISAB PERLU DIKESAHKAN"))
+            print()
+
+        # Dua kumpulan: kerja harian, dan urusan app itu sendiri.
+        print(ui.warna("  ── KIRAAN " + "─" * (DALAM - 8), ui.W.MALAP))
+        print()
         print("  [1]  Kira Zakat")
         print("  [2]  Daftar")
         print("  [3]  Kadar & Tolakan")
-        print("  [4]  Tetapan")
         print("  [5]  Sejarah Kiraan")
+        print()
+        print(ui.warna("  ── APP " + "─" * (DALAM - 5), ui.W.MALAP))
+        print()
+        print("  [4]  Tetapan")
         print("  [6]  Kemas Kini")
+        print()
         print("  [0]  Keluar")
         print()
         print(ui.warna(f"  {versi.penuh()}", ui.W.MALAP))

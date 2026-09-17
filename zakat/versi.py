@@ -13,16 +13,17 @@ pengguna. Buang satu feature = MAJOR, walaupun kerjanya sepuluh minit.
 Setiap kali nombor ini naik, catat sebabnya dalam CHANGELOG.md.
 """
 
-NOMBOR = "1.1.0"
+NOMBOR = "1.2.0"
 TARIKH = "17/09/2026"
 
 # Apa yang berubah pada versi SEMASA. Dipaparkan pada skrin Kemas Kini,
 # dan dihantar ke app lain melalui versi.json di pelayan.
 # Sejarah penuh ada dalam CHANGELOG.md.
 NOTA = [
-    "Menu Kemas Kini dalam app — tak perlu curl lagi",
-    "App semak versi baharu setiap kali dibuka",
-    "Salinan kod lama disimpan dalam .backup/",
+    "Peringatan nisab setiap suku (Jan, Apr, Jul, Okt)",
+    "Eksport semua data ke fail teks — Tetapan ▸ [5]",
+    "Menu utama dibahagi dua: KIRAAN dan APP",
+    "Kotak tak lagi pecah bila teks terlalu panjang",
 ]
 
 
