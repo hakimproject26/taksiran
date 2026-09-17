@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
 """Taksiran Zakat Pendapatan — CLI untuk Termux."""
 
+import os
 import sys
 import textwrap
+import threading
 from datetime import date, datetime
 from decimal import Decimal
 
-from zakat import cetak, readme, store, ui, versi
+from zakat import cetak, kemas, readme, store, ui, versi
 from zakat.kira import Hasil, Tolakan, kira_kaedah_a, kira_kaedah_b
 
 LEBAR = 52
 DALAM = LEBAR - 4  # lebar teks di dalam kotak
+
+# Hasil semakan kemas kini semasa app dibuka. None = belum selesai.
+_KEMAS = None
 
 
 # ---------------------------------------------------------------- utiliti
@@ -469,19 +474,49 @@ def menu_tetapan():
             ui.baris_kv("Gaya output print",
                         cetak.nama_gaya(cfg.get("gaya", cetak.GAYA_LALAI)), DALAM),
             ui.baris_kv("Versi", versi.penuh(), DALAM),
+            "",
+            ui.baris_kv("Semak kemas kini",
+                        "Ya" if cfg.get("semak_kemas", True) else "Tidak", DALAM),
         ], LEBAR))
         print()
         print("  [1]  Pilih gaya output print")
         print("  [2]  README — sejarah app ini")
+        print(f"  [3]  Sumber kemas kini   {ui.warna(cfg.get('sumber_kemas', '') or '(kosong)', ui.W.MALAP)}")
+        print(f"  [4]  Semak semasa buka   {ui.warna('Ya' if cfg.get('semak_kemas', True) else 'Tidak', ui.W.MALAP)}")
         print("  [0]  Kembali")
         print()
-        pilih = ui.tanya_pilih({"1", "2", "0"}, "  pilih ▸ ")
+        pilih = ui.tanya_pilih({"1", "2", "3", "4", "0"}, "  pilih ▸ ")
         if pilih is None or pilih == "0":
             return
         if pilih == "1":
             menu_gaya()
         elif pilih == "2":
             skrin_readme()
+        elif pilih == "3":
+            print()
+            print(ui.warna("  Contoh: http://10.158.15.204:8000", ui.W.MALAP))
+            print(ui.warna("  Alamat folder yang ada versi.json dan taksiran.tar.gz.",
+                           ui.W.MALAP))
+            print()
+            baharu = ui.tanya("Sumber kemas kini",
+                              cfg.get("sumber_kemas", ""), boleh_kosong=True)
+            if baharu is not None:
+                cfg["sumber_kemas"] = baharu.strip()
+                store.simpan_config(cfg)
+                print(ui.warna("  ✓ disimpan", ui.W.HIJAU))
+                ui.jeda()
+        elif pilih == "4":
+            cfg["semak_kemas"] = not cfg.get("semak_kemas", True)
+            store.simpan_config(cfg)
+            print()
+            print(ui.warna(
+                "  ✓ semak semasa buka: "
+                + ("Ya" if cfg["semak_kemas"] else "Tidak"), ui.W.HIJAU))
+            print()
+            if not cfg["semak_kemas"]:
+                print(ui.warna("  App tak akan semak sendiri lagi — guna "
+                               "[6] Kemas Kini bila perlu.", ui.W.MALAP))
+            ui.jeda()
 
 
 # ---------------------------------------------------------------- readme
@@ -663,6 +698,151 @@ def menu_sejarah():
         skrin_cetak_rekod(tunjuk[int(pilih) - 1])
 
 
+# ---------------------------------------------------------------- kemas
+
+# Berapa lama menu utama sanggup tunggu jawapan pelayan sebelum ia naik
+# tanpa notis. Kalau pelayan jawab laju (biasanya dalam rangkaian sendiri),
+# notis terus kelihatan. Kalau tidak, semakan diteruskan di latar dan
+# notis muncul pada skrin berikutnya.
+MASA_TUNGGU_MENU = 0.6
+
+
+def semak_kemas_awal(cfg):
+    """Semak versi baharu SEKALI sahaja, semasa app dibuka.
+
+    Sengaja tidak diulang setiap kali kembali ke menu utama — kalau tidak,
+    app akan tertunggu setiap kali keluar dari submenu.
+    """
+    global _KEMAS
+    if not cfg.get("semak_kemas", True):
+        return
+
+    sumber = cfg.get("sumber_kemas", "")
+
+    def kerja():
+        global _KEMAS
+        _KEMAS = kemas.semak(sumber)
+
+    t = threading.Thread(target=kerja, daemon=True)
+    t.start()
+    t.join(MASA_TUNGGU_MENU)
+
+
+def mula_semula():
+    """Ganti proses ini dengan app yang baru dipasang.
+
+    Python sudah memuat kod lama ke dalam memori, jadi kod baharu hanya
+    berkuat kuasa selepas proses dimulakan semula.
+    """
+    try:
+        os.execv(sys.executable,
+                 [sys.executable, os.path.abspath(__file__)] + sys.argv[1:])
+    except OSError:
+        print()
+        print(ui.warna("  Sila tutup dan buka semula app.", ui.W.MALAP))
+        ui.jeda()
+
+
+def skrin_kemas(cfg):
+    """Semak dan pasang versi baharu — semuanya dari dalam app."""
+    sumber = cfg.get("sumber_kemas", "")
+
+    def kepala():
+        ui.bersih()
+        print()
+        print(ui.warna("  KEMAS KINI", ui.W.TEBAL))
+        print(ui.garis(None, LEBAR))
+        print()
+
+    if not sumber:
+        kepala()
+        print(ui.warna("  Sumber kemas kini belum ditetapkan.", ui.W.MERAH))
+        print()
+        print("  Tetapkan di  Tetapan ▸ [3] Sumber kemas kini.")
+        print()
+        ui.jeda()
+        return
+
+    kepala()
+    print(ui.warna("  Menyemak …", ui.W.MALAP))
+    hasil = kemas.semak(sumber)
+
+    kepala()
+    print(ui.baris_kv("Dipasang", versi.penuh(), DALAM))
+    if hasil.get("ok"):
+        print(ui.baris_kv(
+            "Terkini", f"v{hasil['versi']} ({hasil['tarikh']})", DALAM))
+    print(ui.baris_kv("Sumber", kemas._betulkan(sumber), DALAM))
+    print()
+
+    # --- pelayan tak dapat dihubungi ---
+    if not hasil.get("ok"):
+        print(ui.warna("  ✗ " + hasil["ralat"], ui.W.MERAH))
+        print()
+        print("  Kalau ini komputer sendiri, hidupkan pelayan:")
+        print(ui.warna("    cd ~/serve-zakat", ui.W.MALAP))
+        print(ui.warna("    python3 -m http.server 8000", ui.W.MALAP))
+        print()
+        print("  [C] Cuba lagi    [0] Kembali")
+        print()
+        if ui.tanya_pilih({"c", "0"}, "  pilih ▸ ") == "c":
+            return skrin_kemas(cfg)
+        return
+
+    # --- sudah terkini ---
+    if not hasil.get("ada"):
+        print(ui.warna("  ✓ Tuan sudah guna versi terkini", ui.W.HIJAU))
+        print()
+        ui.jeda()
+        return
+
+    # --- ada versi baharu ---
+    if hasil.get("nota"):
+        print("  Apa yang berubah:")
+        for n in hasil["nota"]:
+            print(f"    • {n}")
+        print()
+
+    print("  [U] Muat turun & pasang    [0] Kembali")
+    print()
+    if ui.tanya_pilih({"u", "0"}, "  pilih ▸ ") != "u":
+        return
+
+    # --- muat turun dan pasang ---
+    langkah = []
+
+    def lapor(mesej):
+        langkah.append(mesej)
+        kepala()
+        print(ui.baris_kv("Memasang", f"v{hasil['versi']}", DALAM))
+        print()
+        for b in langkah:
+            print("  " + b)
+        print()
+
+    ok, mesej = kemas.pasang(sumber, hasil["versi"], lapor)
+
+    kepala()
+    if not ok:
+        print(ui.warna("  ✗ Pemasangan gagal", ui.W.MERAH))
+        print()
+        print("  " + mesej)
+        print()
+        print(ui.warna("  Tiada apa-apa diubah — app masih versi lama.",
+                       ui.W.HIJAU))
+        print()
+        ui.jeda()
+        return
+
+    print(ui.warna(f"  ✓ v{hasil['versi']} dipasang", ui.W.HIJAU))
+    print()
+    print("  Data tuan tidak disentuh — rekod sejarah, event")
+    print("  dan tetapan kekal seperti sedia ada.")
+    print()
+    ui.jeda("  [ENTER] mula semula app ▸ ")
+    mula_semula()
+
+
 def menu_utama():
     while True:
         cfg = store.config()
@@ -674,16 +854,27 @@ def menu_utama():
         if ev.get("nama"):
             print(ui.warna(f"  Event: {ev['nama']}", ui.W.MALAP))
             print()
+
+        if _KEMAS and _KEMAS.get("ok") and _KEMAS.get("ada"):
+            print(ui.kotak([
+                ui.baris_kv("Tuan guna", versi.penuh(), DALAM),
+                ui.baris_kv("Terkini", f"v{_KEMAS['versi']}", DALAM),
+                "",
+                "[6] Kemas Kini",
+            ], LEBAR, tajuk="KEMAS KINI TERSEDIA"))
+            print()
+
         print("  [1]  Kira Zakat")
         print("  [2]  Daftar")
         print("  [3]  Kadar & Tolakan")
         print("  [4]  Tetapan")
         print("  [5]  Sejarah Kiraan")
+        print("  [6]  Kemas Kini")
         print("  [0]  Keluar")
         print()
         print(ui.warna(f"  {versi.penuh()}", ui.W.MALAP))
         print()
-        pilih = ui.tanya_pilih({"1", "2", "3", "4", "5", "0"}, "  pilih ▸ ")
+        pilih = ui.tanya_pilih({"1", "2", "3", "4", "5", "6", "0"}, "  pilih ▸ ")
         if pilih is None or pilih == "0":
             ui.bersih()
             print("\n  jumpa lagi.\n")
@@ -698,6 +889,8 @@ def menu_utama():
             menu_tetapan()
         elif pilih == "5":
             menu_sejarah()
+        elif pilih == "6":
+            skrin_kemas(store.config())
 
 
 def main():
@@ -705,6 +898,7 @@ def main():
     if len(sys.argv) > 1 and sys.argv[1] in ("--versi", "-v"):
         print(versi.penuh())
         return 0
+    semak_kemas_awal(store.config())
     try:
         menu_utama()
     except KeyboardInterrupt:

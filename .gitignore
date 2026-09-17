@@ -5,3 +5,6 @@ data/
 # Sisa Python
 __pycache__/
 *.pyc
+
+# Salinan kod lama sebelum kemas kini
+.backup/

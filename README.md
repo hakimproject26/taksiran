@@ -1,6 +1,6 @@
 # Taksiran Zakat Pendapatan
 
-**Versi 1.0.0** (17/09/2026)
+**Versi 1.1.0** (17/09/2026)
 
 Kalkulator zakat pendapatan berasaskan terminal untuk Termux (Android).
 
@@ -174,6 +174,53 @@ output yang sedang aktif.
 
 Cetakan semula **tidak** menambah rekod baru ke sejarah.
 
+### 7. Kemas Kini
+
+Menu **[6] Kemas Kini** mengemas kini app dari dalam app sendiri — tak perlu
+buka terminal dan taip `curl` lagi.
+
+Ia hubungi pelayan, bandingkan nombor versi, muat turun, semak, dan pasang.
+Lepas siap, app **mula semula sendiri** (kod baharu hanya berkuat kuasa
+selepas proses dimulakan semula).
+
+Selain menu itu, app juga **semak sendiri setiap kali dibuka**. Kalau ada
+versi baharu, satu notis naik di menu utama. Semakan ini tidak melambatkan
+app — ia berjalan di latar, dan menu naik serta-merta.
+
+Sebelum menimpa apa-apa, kod versi semasa disimpan ke `.backup/`. Fail
+`data/` tidak pernah disentuh.
+
+**Kalau pelayan mati**, app jalan seperti biasa tanpa notis. Menu `[6]` akan
+menunjuk mesej ralat dan cara hidupkan pelayan.
+
+**Tetapan berkaitan:**
+
+| Menu | Guna |
+|---|---|
+| `Tetapan ▸ [3]` | Tukar alamat pelayan kemas kini |
+| `Tetapan ▸ [4]` | Hidup/matikan semakan automatik |
+
+**Sisi pelayan.** Untuk menghasilkan fail pemasangan, jalankan:
+
+```bash
+bash ~/serve-zakat/bina.sh
+```
+
+Ia menghasilkan dua fail: `taksiran.tar.gz` (kod) dan `versi.json` (nombor
+versi + nota). Kedua-duanya dibaca daripada `zakat/versi.py` yang sama,
+jadi nombornya tak akan tak selaras.
+
+Kemudian hidupkan pelayan:
+
+```bash
+cd ~/serve-zakat && python3 -m http.server 8000 --bind 0.0.0.0 --directory .
+```
+
+> **Amaran keselamatan.** Tiada pengesahan tandatangan. Sesiapa yang boleh
+> mengawal pelayan itu boleh menghantar apa-apa kod, dan telefon akan
+> menjalankannya. Untuk pelayan dalam rangkaian sendiri ini memadai. Kalau
+> ia diletak di internet, ini lubang sebenar dan perlu difikir semula.
+
 ---
 
 ## Struktur
@@ -189,11 +236,13 @@ taksiran/
 │   ├── kira.py          enjin kiraan
 │   ├── cetak.py         jana teks WhatsApp
 │   ├── readme.py        catatan pembinaan
+│   ├── kemas.py         enjin kemas kini
 │   └── versi.py         nombor versi
-└── data/                terhasil sendiri
-    ├── config.json      kadar, nisab, tolakan
-    ├── event.json       event aktif
-    └── sejarah.json     rekod kiraan
+├── data/                terhasil sendiri
+│   ├── config.json      kadar, nisab, tolakan
+│   ├── event.json       event aktif
+│   └── sejarah.json     rekod kiraan
+└── .backup/             kod versi lama, sebelum ditimpa
 ```
 
 Semua data dalam folder `data/` — backup dengan salin folder itu sahaja.

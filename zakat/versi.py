@@ -13,14 +13,19 @@ pengguna. Buang satu feature = MAJOR, walaupun kerjanya sepuluh minit.
 Setiap kali nombor ini naik, catat sebabnya dalam CHANGELOG.md.
 """
 
-NOMBOR = "1.0.0"
+NOMBOR = "1.1.0"
 TARIKH = "17/09/2026"
 
-SEJARAH = [
-    ("1.0.0", "17/09/2026", "Mula guna versi. Keadaan app setakat ini."),
+# Apa yang berubah pada versi SEMASA. Dipaparkan pada skrin Kemas Kini,
+# dan dihantar ke app lain melalui versi.json di pelayan.
+# Sejarah penuh ada dalam CHANGELOG.md.
+NOTA = [
+    "Menu Kemas Kini dalam app — tak perlu curl lagi",
+    "App semak versi baharu setiap kali dibuka",
+    "Salinan kod lama disimpan dalam .backup/",
 ]
 
 
 def penuh():
-    """Contoh: 'v1.0.0 (17/09/2026)'."""
+    """Contoh: 'v1.1.0 (17/09/2026)'."""
     return f"v{NOMBOR} ({TARIKH})"
