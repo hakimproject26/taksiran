@@ -44,7 +44,7 @@ MASA_TAMAT_MUAT = 60  # saat — muat turun arkib penuh
 def _betulkan(sumber):
     """Kemas URL yang ditaip pengguna.
 
-    Terima '10.158.15.204:8000' sepatah — tambah 'http://' sendiri.
+    Terima '10.94.149.204:8000' sepatah — tambah 'http://' sendiri.
     """
     s = (sumber or "").strip().rstrip("/")
     if s and "://" not in s:

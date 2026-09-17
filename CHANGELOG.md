@@ -37,7 +37,7 @@ mengemas kini dirinya. Satu pemasangan manual yang terakhir diperlukan
 sebelum ciri ini berfungsi:
 
 ```bash
-curl -fsSL http://10.158.15.204:8000/pasang.sh | bash
+curl -fsSL http://10.94.149.204:8000/pasang.sh | bash
 ```
 
 Selepas itu, semua kemas kini seterusnya boleh dibuat dari dalam app.

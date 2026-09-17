@@ -494,7 +494,7 @@ def menu_tetapan():
             skrin_readme()
         elif pilih == "3":
             print()
-            print(ui.warna("  Contoh: http://10.158.15.204:8000", ui.W.MALAP))
+            print(ui.warna("  Contoh: http://10.94.149.204:8000", ui.W.MALAP))
             print(ui.warna("  Alamat folder yang ada versi.json dan taksiran.tar.gz.",
                            ui.W.MALAP))
             print()

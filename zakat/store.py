@@ -18,7 +18,7 @@ CONFIG_LALAI = {
     "tolakan_anak_b": 1000,
     "gaya": "mono",
     # Alamat pelayan kemas kini. Boleh ditukar di Tetapan ▸ [3].
-    "sumber_kemas": "http://10.158.15.204:8000",
+    "sumber_kemas": "http://10.94.149.204:8000",
     # Semak versi baharu setiap kali app dibuka. Boleh dimatikan kalau
     # ia terasa lambat — lihat Tetapan ▸ [4].
     "semak_kemas": True,
