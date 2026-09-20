@@ -12,6 +12,87 @@ Ukurannya bukan berapa banyak kerja, tapi berapa besar kesannya pada pengguna.
 
 ---
 
+## [3.1.1] — 20/09/2026
+
+Kemas kini datang dari GitHub, bukan dari komputer sendiri.
+
+**Sebab versi ini PATCH:** tiada keupayaan baharu dan tiada cara guna yang
+berubah. Saluran ia datang berubah, dan itu membetulkan sesuatu yang memang
+menyusahkan — bukan menambah sesuatu yang tuan boleh buat.
+
+**Diubah:**
+
+- **Saluran kemas kini ialah release GitHub**, melalui HTTPS. Sebelum ini
+  telefon menghubungi `python3 -m http.server` di mesin tuan melalui HTTP
+  tanpa penyulitan, dan mesin itu mesti hidup setiap kali telefon mahu
+  menyemak. Kini ia tidak perlu hidup langsung
+- **Alamat lama ditukar sendiri** pada kali pertama app dibuka selepas ini.
+  Ia berlaku **sekali sahaja**, dan hanya apabila alamat yang tersimpan
+  padan tepat dengan lalai lama yang diketahui. Sumber yang tuan taip sendiri
+  tidak pernah disentuh. Kalau tuan sengaja menetapkan semula alamat lama
+  kemudian, app tidak akan menentangnya berulang kali
+- **Masa tunggu skrin Kemas Kini dilanjutkan** dari 3 ke 10 saat. Saluran
+  baharu melibatkan DNS, dua jabat tangan TLS, dan dua hop redirect. Semakan
+  latar semasa app dibuka kekal 3 saat — ia hanya menunggu 0.6 saat sebelum
+  menu naik, jadi semakan yang lambat cuma tiba lewat. Skrin yang tuan sedang
+  lihat dengan sengaja sahaja yang membayar
+- **`pasang.sh` memasang `ca-certificates`** dan membezakan kegagalan sijil
+  TLS daripada kegagalan pelayan. Tanpa ini, satu stor sijil yang hilang
+  kelihatan seperti "pelayan mati" selama-lamanya
+- **`pasang.sh` juga memindahkan alamat lama**, ke atas
+  `~/.taksiran/data/config.json`. Ia menulis secara atomik, padan-tepat
+  sahaja, dan mengekalkan semua kunci lain
+
+**Dibaiki:**
+
+- **Mesej masa tamat menyebut angka yang salah.** `_mesej_ralat()` memformat
+  dengan pemalar modul, jadi masa tamat 60 saat yang luput pada muat turun
+  arkib melaporkan "Tiada jawapan dalam 3 saat". Angka itu dibaca oleh tuan
+  untuk memutuskan apa nak buat seterusnya, jadi ia bukan butiran kecil
+- **Arahan pemasangan dalam notis Aether disemat** kepada alamat Tailscale.
+  Ia kini diterbitkan daripada `sumber_kemas`, jadi ia tidak boleh menjadi
+  basi lagi
+- **Nasihat "hidupkan pelayan sendiri"** pada skrin ralat. Ia menjadi salah
+  sebaik saluran berpindah — tuan akan menghidupkan mesin yang tidak lagi
+  relevan sambil sebab sebenar tidak diperiksa
+- **Pemeriksaan silang kunci tiga-hala dalam `bina.sh` boleh terpadam
+  senyap.** Ia dibalut `if [ -f "$TUJUAN/pasang.sh" ]`, dan `$TUJUAN` ialah
+  direktori `bina.sh` sendiri. Sebaik skrip itu berpindah ke `alat/`, ujian
+  itu menjadi palsu, pengawal dilangkau, dan hanyutan kunci akan lolos ke
+  setiap binaan tanpa bunyi. Sekarang fail yang hilang ialah ralat keras
+- **Pemeriksaan isi arkib dinaikkan** daripada dua corak terlarang kepada
+  kesamaan set tepat dengan pokok staging. Versi lama hanya menegaskan fail
+  WAJIB ada, jadi apa-apa yang tidak dinamakan kedua-dua senarai akan melalui
+  tanpa halangan
+
+**Tidak berubah:**
+
+- Tandatangan Ed25519. Ia tetap yang memutuskan sama ada kod itu kod tuan;
+  GitHub hanya menukar hos, bukan sauh
+- Tiada **suis** untuk mematikan pengesahan
+- Tiada perubahan pada kiraan, nisab, atau data tuan
+
+**Had yang mesti diketahui:**
+
+- **Akses tulis ke repo GitHub kini setara dengan pemilikan kunci
+  tandatangan.** Release yang ditandatangani dengan kunci yang sama tidak
+  boleh dibezakan daripada yang asli, jadi sesiapa yang menguasai akaun itu
+  boleh menghantar kod. 2FA bukan pilihan
+- **Release tidak boleh dipadam, dan aset tidak boleh diganti.** Kalau
+  release terakhir dipadam, `latest` jatuh ke release sebelumnya, telefon
+  membaca versi lama, dan app berkata "sudah guna versi terkini" — beku
+  secara senyap, tanpa ralat. Hotfix mesti jadi versi baharu, sentiasa
+- **Arkib dan tandatangannya dimuat turun dalam dua permintaan berasingan**
+  terhadap asas yang bergerak. Menerbitkan dua versi berturut-turut semasa
+  telefon di tengah-tengah muat turun boleh memasangkannya silang. Ia gagal
+  tertutup, tetapi mesejnya tidak menyuruh cuba lagi — atas sebab yang
+  diterangkan dalam kod
+- **`timeout=` pada `urlopen` ialah masa tamat setiap operasi soket**, bukan
+  had masa dinding. Pelayan yang menitis boleh memanjangkan satu bacaan jauh
+  melebihi had
+
+---
+
 ## [3.1.0] — 20/09/2026
 
 Kod diperiksa setiap kali app dibuka, bukan hanya semasa ia dimuat turun.

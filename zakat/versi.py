@@ -13,18 +13,19 @@ pengguna. Buang satu feature = MAJOR, walaupun kerjanya sepuluh minit.
 Setiap kali nombor ini naik, catat sebabnya dalam CHANGELOG.md.
 """
 
-NOMBOR = "3.1.0"
+NOMBOR = "3.1.1"
 TARIKH = "20/09/2026"
 
 # Apa yang berubah pada versi SEMASA. Dipaparkan pada skrin Kemas Kini,
 # dan dihantar ke app lain melalui versi.json di pelayan.
 # Sejarah penuh ada dalam CHANGELOG.md.
 NOTA = [
-    "Setiap kali app dibuka, kodnya diperiksa terhadap senarai",
-    "bertandatangan — fail yang diubah atau ditambah akan",
-    "menghalang app daripada dibuka, dan direkod",
-    "Data tuan dipindahkan ke ~/.taksiran/ supaya kemas kini",
-    "kod tidak lagi boleh menyentuhnya",
+    "Kemas kini datang dari GitHub, melalui HTTPS — komputer",
+    "sendiri tidak perlu hidup lagi",
+    "Alamat lama ditukar sendiri pada kali pertama app dibuka",
+    "selepas ini, sekali sahaja",
+    "Masa menunggu skrin Kemas Kini dilanjutkan, kerana",
+    "saluran baharu lebih jauh",
 ]
 
 

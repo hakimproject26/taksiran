@@ -38,6 +38,7 @@ import json
 import os
 import re
 import socket
+import ssl
 import tarfile
 import tempfile
 import urllib.error
@@ -55,9 +56,30 @@ NAMA_VERSI = "versi.json"
 NAMA_ARKIB = "taksiran.tar.gz"
 NAMA_SIG = NAMA_ARKIB + ".sig"
 
-MASA_TAMAT = 3         # saat — semakan versi sahaja (fail kecil)
+# Masa tamat ialah PARAMETER, bukan satu pemalar sejagat. Semakan yang
+# berjalan di latar semasa app dibuka tidak patut menunggu selama skrin yang
+# tuan sedang melihat dengan sengaja.
+MASA_TAMAT = 3         # saat — semakan latar semasa app dibuka (fail kecil)
+MASA_TAMAT_PAPAN = 10  # saat — skrin Kemas Kini, di mana tuan memang menunggu
 MASA_TAMAT_TANDA = 10  # saat — fail tandatangan (129 bait, talian boleh lembap)
 MASA_TAMAT_MUAT = 60   # saat — muat turun arkib penuh
+#
+# Kenapa 3 saat terlalu ketat untuk saluran GitHub, dan kenapa ia dibiarkan
+# begitu untuk semakan latar: lima muat turun berturut-turut dari mesin
+# berwayar mengambil 0.45 0.37 0.37 2.36 0.38 saat. Satu daripada lima
+# menggunakan 79% belanjawan. Di telefon, melalui data mudah alih, dengan DNS
+# sejuk dan DUA jabat tangan TLS (github.com, kemudian hos asetnya), 3 saat
+# akan dilepasi dengan kerap.
+#
+# Itu tidak menggagalkan pelancaran — `semak_kemas_awal` hanya menunggu 0.6
+# saat sebelum menu naik, jadi semakan yang lambat cuma tiba lewat. Yang
+# benar-benar menunggu ialah skrin Kemas Kini, dan itulah sebabnya skrin itu
+# memakai MASA_TAMAT_PAPAN.
+#
+# HAD: `timeout=` pada urlopen ialah masa tamat setiap OPERASI soket, bukan
+# had masa dinding. Pelayan yang menitis satu bait setiap tujuh saat boleh
+# memanjangkan satu bacaan jauh melebihi 10 saat. Had yang sebenar
+# memerlukan pemeriksaan di dalam gelung baca dalam `_ambil`.
 
 # Arkib sebenar ~45 KB. Had ini wujud kerana pengesahan berlaku SELEPAS
 # muat turun — pelayan yang diceroboh boleh menghantar strim tanpa
@@ -81,7 +103,9 @@ _RE_KAWAL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
 def _betulkan(sumber):
     """Kemas URL yang ditaip pengguna.
 
-    Terima '100.78.29.8:8000' sepatah — tambah 'http://' sendiri.
+    Terima '100.78.29.8:8000' sepatah — tambah 'http://' sendiri. Saluran
+    lalai ialah HTTPS dan sudah membawa skema, jadi ia melalui fungsi ini
+    tanpa diubah.
     """
     s = (sumber or "").strip().rstrip("/")
     if s and "://" not in s:
@@ -137,28 +161,41 @@ def _ambil(url, masa_tamat, maks=SAIZ_MAKS):
         return data
 
 
-def _mesej_ralat(e):
-    """Tukar ralat teknikal jadi ayat yang boleh difahami."""
+def _mesej_ralat(e, masa_tamat=MASA_TAMAT):
+    """Tukar ralat teknikal jadi ayat yang boleh difahami.
+
+    `masa_tamat` dihulur masuk, bukan dibaca daripada pemalar modul. Versi
+    lama memformat dengan `MASA_TAMAT` supaya masa tamat 60 saat yang luput
+    pada muat turun arkib melaporkan "Tiada jawapan dalam 3 saat" — angka
+    yang salah, di skrin yang tuan sedang baca untuk memutuskan apa nak buat.
+    """
     if isinstance(e, urllib.error.HTTPError):
         if e.code == 404:
             return "Pelayan hidup, tetapi fail itu tiada (404)."
         return f"Pelayan jawab dengan ralat {e.code}."
     if isinstance(e, urllib.error.URLError):
         sebab = getattr(e, "reason", None)
+        if isinstance(sebab, ssl.SSLCertVerificationError):
+            # HTTPS menambah satu mod kegagalan yang tidak wujud semasa
+            # saluran ini memakai http:// ke alamat LAN: stor sijil. Tanpa
+            # mesej yang menyatakannya, ia kelihatan seperti "pelayan mati"
+            # dan tuan akan membetulkan benda yang salah.
+            return ("Sijil HTTPS tidak dapat diperiksa — stor sijil peranti "
+                    "mungkin tiada. Cuba: pkg install ca-certificates")
         if isinstance(sebab, (socket.timeout, TimeoutError)):
-            return f"Tiada jawapan dalam {MASA_TAMAT} saat."
+            return f"Tiada jawapan dalam {masa_tamat} saat."
         if isinstance(sebab, ConnectionRefusedError):
             return "Pelayan menolak sambungan — ia mungkin tidak hidup."
         return f"Tak dapat hubungi pelayan ({sebab})."
     if isinstance(e, (socket.timeout, TimeoutError)):
-        return f"Tiada jawapan dalam {MASA_TAMAT} saat."
+        return f"Tiada jawapan dalam {masa_tamat} saat."
     return f"Ralat: {e}"
 
 
 # ------------------------------------------------------------------ semak
 
-def semak(sumber):
-    """Semak versi terkini di pelayan.
+def semak(sumber, masa_tamat=MASA_TAMAT):
+    """Semak versi terkini di saluran kemas kini.
 
     Pulang dict. Dua bentuk:
         {"ok": True,  "ada": bool, "versi": str, "tarikh": str, "nota": [str]}
@@ -166,15 +203,19 @@ def semak(sumber):
 
     Tidak pernah membaling ralat — semua kegagalan jadi "ok": False, supaya
     app boleh terus jalan walau pelayan mati.
+
+    `masa_tamat` dihulur oleh pemanggil. Semakan latar semasa app dibuka
+    memakai lalai yang pendek; skrin Kemas Kini, di mana tuan memang
+    menunggu, memakai MASA_TAMAT_PAPAN. Lihat nota di MASA_TAMAT.
     """
     sumber = _betulkan(sumber)
     if not sumber:
         return {"ok": False, "ralat": "Sumber kemas kini belum ditetapkan."}
 
     try:
-        mentah = _ambil(f"{sumber}/{NAMA_VERSI}", MASA_TAMAT)
+        mentah = _ambil(f"{sumber}/{NAMA_VERSI}", masa_tamat)
     except Exception as e:  # noqa: BLE001 — apa-apa pun, jangan hembuskan
-        return {"ok": False, "ralat": _mesej_ralat(e)}
+        return {"ok": False, "ralat": _mesej_ralat(e, masa_tamat)}
 
     try:
         data = json.loads(mentah.decode("utf-8"))
@@ -343,7 +384,25 @@ def _periksa(laluan, dijangka, teks_sig, data):
     """
     ok, sebab = tandatangan.sahkan(teks_sig, data)
     if not ok:
-        return False, sebab
+        # Dua sebab, dan kedua-duanya dinamakan. Yang pertama ialah serangan:
+        # arkib atau tandatangannya ditukar dalam perjalanan. Yang kedua ialah
+        # perlumbaan — arkib dan `.sig` dimuat turun dalam dua permintaan
+        # BERASINGAN terhadap asas `latest/download` yang bergerak, jadi
+        # menerbitkan dua versi berturut-turut semasa telefon di tengah-
+        # tengah muat turun boleh memasangkannya silang.
+        #
+        # Mesej ini SENGAJA tidak menyuruh "cuba lagi". Mengajar seseorang
+        # mengulang permintaan selepas tandatangan tidak padan bermakna
+        # mengajar mereka menembusi percubaan serangan dengan mengulang.
+        # Tuan yang tahu dia baru sahaja menerbitkan dua kali akan faham
+        # sendiri; tuan yang tidak, tidak sepatutnya diberi galakan.
+        return False, (
+            f"{sebab}\n"
+            f"       Arkib dan tandatangannya tidak sepadan. Ini boleh "
+            f"bermakna fail itu diubah dalam perjalanan, atau saluran sedang "
+            f"bertukar versi ketika ia dimuat turun. Jangan pasang kod ini "
+            f"sebelum jelas yang mana satu."
+        )
     return _sahkan(laluan, dijangka)
 
 
@@ -515,16 +574,22 @@ def pasang(sumber, versi_dijangka, lapor=None):
 
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".tar.gz")
     tmp.close()
+    # Diperiksa SEMASA jalan. `except` di bawah membalut kedua-dua muat turun,
+    # jadi ia tidak boleh tahu yang mana satu luput daripada pemboleh ubah
+    # tempatan di dalam blok `try` — dan melaporkan "Tiada jawapan dalam 60
+    # saat" untuk fail tandatangan 129 bait ialah ayat yang mengelirukan.
+    tamat = MASA_TAMAT_MUAT
     try:
         lapor(f"Memuat turun {NAMA_ARKIB} …")
-        data = _ambil(f"{sumber}/{NAMA_ARKIB}", MASA_TAMAT_MUAT)
+        data = _ambil(f"{sumber}/{NAMA_ARKIB}", tamat)
         with open(tmp.name, "wb") as f:
             f.write(data)
         lapor(f"  {len(data) / 1024:.0f} KB diterima")
 
         lapor(f"Memuat turun {NAMA_SIG} …")
+        tamat = MASA_TAMAT_TANDA
         try:
-            teks_sig = _ambil(f"{sumber}/{NAMA_SIG}", MASA_TAMAT_TANDA)
+            teks_sig = _ambil(f"{sumber}/{NAMA_SIG}", tamat)
             teks_sig = teks_sig.decode("ascii", "replace")
         except urllib.error.HTTPError as e:
             if e.code == 404:
@@ -571,7 +636,7 @@ def pasang(sumber, versi_dijangka, lapor=None):
         lapor("  ✓ selesai")
         return True, "", True
     except Exception as e:  # noqa: BLE001
-        return False, _mesej_ralat(e), False
+        return False, _mesej_ralat(e, tamat), False
     finally:
         # Arkib muat turun mesti dibuang dalam SEMUA jalan keluar, termasuk
         # setiap `return` di atas dan sebarang pengecualian. Tanpa ini,

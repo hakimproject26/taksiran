@@ -14,16 +14,24 @@ keluarkan teks siap untuk dihantar ke WhatsApp.
 Cara biasa — satu baris, dan ia memasang Aether sekali:
 
 ```bash
-curl -fsSL http://100.78.29.8:8000/pasang.sh | bash
+curl -fsSL https://github.com/hakimproject26/taksiran/releases/latest/download/pasang.sh | bash
 ```
 
-Kalau pelayan di alamat lain, hulur sebagai argumen:
+Alamat itu **tidak mengandungi nombor versi**, jadi ia kekal sama untuk setiap
+versi seterusnya. Ia juga HTTPS — arkib tidak boleh ditukar dalam perjalanan.
+
+Kalau hos lain, hulur sebagai argumen:
 
 ```bash
-curl -fsSL http://<alamat>:8000/pasang.sh | bash -s http://<alamat>:8000
+curl -fsSL <url>/pasang.sh | bash -s <url>
 ```
 
 Tak perlu `pip install` apa-apa — guna pustaka standard Python sahaja.
+
+> **Termux tanpa stor sijil.** Sejak saluran berpindah ke HTTPS, `pasang.sh`
+> memerlukan `ca-certificates`. Ia memasangnya sendiri, dan kalau ia gagal ia
+> memberitahu dengan ayat yang menyebut sijil — bukan "pelayan mati". Kalau
+> tuan melihat mesej itu: `pkg install ca-certificates`.
 
 Selepas ini, buka app dengan menaip:
 
@@ -31,7 +39,7 @@ Selepas ini, buka app dengan menaip:
 zakat
 ```
 
-### Pasang secara manual (kalau tiada pelayan)
+### Pasang secara manual (kalau saluran tidak dapat dihubungi)
 
 ```bash
 pkg install python
@@ -206,7 +214,7 @@ Setiap gaya ada **pratonton** — tuan nampak dulu sebelum simpan.
 |---|---|
 | `[1]` | Pilih gaya output print (dengan pratonton) |
 | `[2]` | README — catatan pembinaan app ini |
-| `[3]` | Sumber kemas kini — alamat pelayan |
+| `[3]` | Sumber kemas kini — alamat saluran |
 | `[4]` | Semak kemas kini semasa buka: Ya / Tidak |
 | `[5]` | Eksport data ke fail teks |
 
@@ -401,7 +409,8 @@ Cetakan semula **tidak** menambah rekod baru ke sejarah.
 Menu **[6] Kemas Kini** mengemas kini app dari dalam app sendiri — tak perlu
 buka terminal dan taip `curl` lagi.
 
-Ia hubungi pelayan, bandingkan nombor versi, muat turun, semak, dan pasang.
+Ia hubungi saluran kemas kini — release GitHub awam — bandingkan nombor
+versi, muat turun, semak, dan pasang.
 Lepas siap, app **mula semula sendiri** (kod baharu hanya berkuat kuasa
 selepas proses dimulakan semula).
 
@@ -418,12 +427,25 @@ Fail data tidak pernah disentuh.
 > kemas kini, jalankan sekali:
 >
 > ```bash
-> curl -fsSL http://100.78.29.8:8000/pasang.sh | bash
+> curl -fsSL https://github.com/hakimproject26/taksiran/releases/latest/download/pasang.sh | bash
 > ```
 >
 > App akan memberitahu tuan sendiri kalau langkah ini belum dibuat. Ia tidak
 > berdiam, kerana app yang kelihatan dilindungi sedangkan tidak adalah lebih
 > buruk daripada app yang terang-terang tidak.
+
+> **Saluran berpindah ke GitHub pada v3.1.1.** Telefon yang sudah dipasang
+> menyimpan alamat lama di dalam `config.json`, dan `store.config()` menindih
+> fail yang disimpan di atas lalai — jadi menukar lalai sahaja tidak
+> mengubah apa-apa pada telefon yang sedia ada. Alamat itu ditulis semula
+> dalam **dua** tempat: kod migrasi dalam app, dan `pasang.sh` sendiri.
+> Yang kedua itulah yang berfungsi walaupun mesin lama sudah dimatikan.
+>
+> Ia **padan-tepat sahaja**: hanya dua alamat lama yang diketahui ditulis
+> semula, semua kunci lain dalam `config.json` kekal, dan tulisan itu atomik.
+> Alamat tersuai yang tuan taip sendiri **tidak** disentuh.
+>
+> Pelayan lama bersara, bukan dimusnahkan — ia kekal sebagai sandaran.
 
 Arkib itu membawa **MANIFEST** — senarai setiap fail yang dihantar, dengan
 SHA-256 setiap satu — dan MANIFEST itu ditandatangani. Ia diperiksa
@@ -431,37 +453,54 @@ SHA-256 setiap satu — dan MANIFEST itu ditandatangani. Ia diperiksa
 ada di bawah, di bahagian Aether: satu MANIFEST yang basi akan membuatkan
 Aether menolak app itu pada setiap kali dibuka, dan alias `zakat` mati.
 
-**Kalau pelayan mati**, app jalan seperti biasa tanpa notis. Menu `[6]` akan
-menunjuk mesej ralat dan cara hidupkan pelayan.
+**Kalau saluran tidak dapat dihubungi**, app jalan seperti biasa tanpa notis.
+Menu `[6]` akan menunjuk mesej ralat dan arahan `curl` yang boleh dicuba
+sendiri, supaya tuan boleh membezakan "sambungan saya bermasalah" daripada
+"saluran bermasalah".
 
 **Tetapan berkaitan:**
 
 | Menu | Guna |
 |---|---|
-| `Tetapan ▸ [3]` | Tukar alamat pelayan kemas kini |
+| `Tetapan ▸ [3]` | Tukar saluran kemas kini |
 | `Tetapan ▸ [4]` | Hidup/matikan semakan automatik |
 
-**Sisi pelayan.** Untuk menghasilkan fail pemasangan, jalankan:
+**Menerbitkan versi.** Untuk menghasilkan dan menerbitkan satu versi:
 
 ```bash
-bash ~/serve-zakat/bina.sh
+# 1. sunting zakat/versi.py dan CHANGELOG.md
+# 2. commit, kemudian tandakan:
+git commit -am "v3.1.2 — ..." && git tag v3.1.2 && git push && git push --tags
+# 3. terbitkan:
+bash alat/lepas.sh
 ```
 
-Ia menghasilkan **tiga** fail: `taksiran.tar.gz` (kod), `taksiran.tar.gz.sig`
-(tandatangan bagi arkib itu), dan `versi.json` (nombor versi + nota).
-`versi.json` dibaca daripada `zakat/versi.py` yang sama yang app guna, jadi
-nombornya tak akan tak selaras.
+`alat/lepas.sh` memanggil `alat/bina.sh`, yang menghasilkan **empat** fail
+dalam `alat/keluaran/`: `taksiran.tar.gz` (kod), `taksiran.tar.gz.sig`
+(tandatangan bagi arkib itu), `versi.json` (nombor versi + nota), dan satu
+salinan `pasang.sh`. `versi.json` dibaca daripada `zakat/versi.py` yang sama
+yang app guna, jadi nombornya tak akan tak selaras.
 
-Skrip ini **menanya frasa laluan kunci tandatangan**, jadi ia tidak boleh
+Skrip binaan **menanya frasa laluan kunci tandatangan**, jadi ia tidak boleh
 dijalankan tanpa tuan hadir. Ia juga membatalkan binaan kalau pengesah
-Python tidak bersetuju dengan openssl, atau kalau kunci dalam `pasang.sh`
-tidak sama dengan kunci dalam app.
+Python tidak bersetuju dengan openssl, kalau kunci dalam `pasang.sh` tidak
+sama dengan kunci dalam app, atau kalau isi arkib tidak sama **tepat**
+dengan pokok yang sepatutnya dihantar.
 
-Kemudian hidupkan pelayan:
+Terbitan itu kemudian naik sebagai release **draf** terlebih dahulu, dan
+hanya diterbitkan selepas keempat-empat aset disahkan ada. Draf tidak
+kelihatan oleh `releases/latest`, jadi tiada telefon boleh melihat terbitan
+separuh siap.
 
-```bash
-cd ~/serve-zakat && python3 -m http.server 8000 --bind 0.0.0.0 --directory .
-```
+**Dua peraturan yang tidak boleh dilanggar:**
+
+- **Jangan padam release.** Kalau release terakhir dipadam, `latest` jatuh ke
+  release sebelumnya, telefon membaca versi lama, dan app berkata "sudah guna
+  versi terkini" — beku secara senyap, tanpa ralat. Hotfix mesti jadi versi
+  **baharu**, sentiasa.
+- **Jangan ganti aset pada tag yang sama.** `kemas.semak()` menapis
+  `versi_jauh > versi_tempatan`, jadi aset yang dimuat naik semula pada versi
+  yang sama tidak boleh sampai kepada sesiapa melalui app.
 
 #### Kunci tandatangan
 
@@ -492,7 +531,7 @@ python3 alat/tanda.py pem     # tampal output ini ke dalam pasang.sh
 Untuk memastikan kedua-duanya benar-benar padan — app dan `pasang.sh`:
 
 ```bash
-python3 alat/tanda.py padan ~/serve-zakat/pasang.sh
+python3 alat/tanda.py padan ~/taksiran/alat/pasang.sh
 ```
 
 `bina.sh` menjalankan pemeriksaan itu sendiri pada setiap binaan, dan
@@ -521,17 +560,23 @@ dengan kunci lain. Kalau ia sama, arkib itu memang rosak atau diubah.
 Untuk memeriksa dengan tangan, tanpa app:
 
 ```bash
-cd ~/serve-zakat
+cd ~/taksiran/alat/keluaran
 python3 ~/taksiran/alat/tanda.py sahkan taksiran.tar.gz
 ```
 
 **Had yang mesti diketahui.** Pemeriksaan tandatangan melindungi daripada
-**arkib yang ditukar**. Ia tidak melindungi daripada pelayan yang diceroboh
+**arkib yang ditukar**. Ia tidak melindungi daripada hos yang diceroboh
 sepenuhnya semasa **pemasangan pertama**, kerana pada masa itu `pasang.sh`
-sendiri datang dari pelayan yang sama — penyerang boleh menukar kedua-duanya
-sekali gus. Sehingga `pasang.sh` dihoskan di tempat lain, perlindungan itu
-hanya separa. Kunci tandatangan juga satu titik kegagalan: kalau ia dicuri
-bersama frasa laluannya, penyerang boleh menandatangani kod.
+sendiri datang dari hos yang sama — penyerang boleh menukar kedua-duanya
+sekali gus. Sejak saluran berpindah ke GitHub, kedua-duanya melalui HTTPS,
+jadi pemerhati di jalan tidak lagi boleh membacanya atau menukarnya. Yang
+tinggal ialah: sesiapa yang boleh menulis ke repo GitHub itu boleh menukar
+kedua-duanya, sama seperti sesiapa yang boleh menulis ke `~/serve-zakat/`
+dahulu. **Akses tulis ke repo itu setara dengan memegang kunci tandatangan.**
+Sebab itu 2FA pada akaun GitHub bukan pilihan.
+
+Kunci tandatangan juga satu titik kegagalan: kalau ia dicuri bersama frasa
+laluannya, penyerang boleh menandatangani kod.
 
 ### Eksport data — `Tetapan ▸ [5]`
 
@@ -651,10 +696,10 @@ baris pertama `aether.py` berjalan. Sesiapa yang menaip
 UID yang sama boleh menukar fail dalam tetingkap itu. Tiada keatoman di sini.
 
 **Kalau `--baiki` tidak menolong** — contohnya kalau kunci itu sendiri
-tertukar, atau pelayan tidak dapat dihubungi — pasang semula terus:
+tertukar, atau saluran tidak dapat dihubungi — pasang semula terus:
 
 ```bash
-curl -fsSL http://100.78.29.8:8000/pasang.sh | bash
+curl -fsSL https://github.com/hakimproject26/taksiran/releases/latest/download/pasang.sh | bash
 ```
 
 ---
@@ -679,8 +724,17 @@ taksiran/
 │   ├── nisab.py         peringatan suku + nisab ikut tahun
 │   ├── eksport.py       eksport data ke teks
 │   └── versi.py         nombor versi
-└── aether/              salinan launcher (dipasang ke ~/.hkm/)
+├── aether/              salinan launcher (dipasang ke ~/.hkm/)
+└── alat/                kod sisi tuan — TIDAK PERNAH dihantar
+    ├── tanda.py         jana/tanda/sahkan tandatangan
+    ├── pasang.sh        pemasang (dihantar sebagai aset release)
+    ├── bina.sh          bina + tandatangan + sahkan
+    ├── lepas.sh         terbitkan ke GitHub Releases
+    └── keluaran/        hasil binaan (gitignore)
 ```
+
+`alat/` tidak pernah masuk ke dalam arkib — lihat "Kalau kemas kini ditolak"
+di atas untuk sebabnya, dan bagaimana `bina.sh` menegaskannya.
 
 Data **tidak** tinggal di sini lagi. Sejak v3.1.0 ia di luar folder app:
 

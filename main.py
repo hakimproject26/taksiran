@@ -1237,7 +1237,8 @@ def menu_tetapan():
             skrin_readme()
         elif pilih == "3":
             print()
-            print(ui.warna("  Contoh: http://100.78.29.8:8000", ui.W.MALAP))
+            print(ui.warna("  Contoh: " + store.CONFIG_LALAI["sumber_kemas"],
+                           ui.W.MALAP))
             print(ui.warna("  Alamat folder yang ada versi.json dan taksiran.tar.gz.",
                            ui.W.MALAP))
             print()
@@ -1593,7 +1594,10 @@ def skrin_kemas(cfg):
 
     kepala()
     print(ui.warna("  Menyemak …", ui.W.MALAP))
-    hasil = kemas.semak(sumber)
+    # Masa tamat yang PANJANG di sini, kerana ini skrin di mana tuan memang
+    # menunggu dengan sengaja. Semakan latar semasa app dibuka kekal pendek —
+    # lihat nota di kemas.MASA_TAMAT.
+    hasil = kemas.semak(sumber, kemas.MASA_TAMAT_PAPAN)
 
     kepala()
     print(ui.baris_kv("Dipasang", versi.penuh(), DALAM))
@@ -1607,9 +1611,16 @@ def skrin_kemas(cfg):
     if not hasil.get("ok"):
         print(ui.warna("  ✗ " + hasil["ralat"], ui.W.MERAH))
         print()
-        print("  Kalau ini komputer sendiri, hidupkan pelayan:")
-        print(ui.warna("    cd ~/serve-zakat", ui.W.MALAP))
-        print(ui.warna("    python3 -m http.server 8000", ui.W.MALAP))
+        # Nasihat ini pernah berkata "hidupkan pelayan sendiri", dan ia
+        # menjadi salah sebaik saluran berpindah ke GitHub — tuan akan
+        # menghidupkan mesin yang tidak lagi relevan sambil sebab sebenar
+        # (sambungan telefon) tidak diperiksa langsung.
+        print("  Saluran kemas kini kini release GitHub, jadi ia perlukan")
+        print("  internet. Kalau sambungan ada, cuba lagi sebentar:")
+        print(ui.warna("    curl -fsSL " + kemas._betulkan(sumber)
+                       + "/versi.json", ui.W.MALAP))
+        print(ui.warna("  Sandaran: Tetapan ▸ [3] boleh ditukar ke pelayan"
+                       " sendiri.", ui.W.MALAP))
         print()
         print("  [C] Cuba lagi    [0] Kembali")
         print()
@@ -1696,7 +1707,12 @@ def skrin_kemas(cfg):
                        ui.W.MALAP))
         print(ui.warna("    Jalankan sekali, di luar app:", ui.W.MALAP))
         print()
-        print("      curl -fsSL http://100.78.29.8:8000/pasang.sh | bash")
+        # URL diterbitkan daripada `sumber_kemas`, bukan disemat. Versi lama
+        # menyemat alamat Tailscale, jadi arahan yang dipaparkan kepada tuan
+        # menjadi salah sebaik saluran berpindah — dan arahan pemasangan yang
+        # salah ialah arahan yang gagal di tangan tuan, bukan di tangan kita.
+        print("      curl -fsSL " + kemas._betulkan(cfg.get("sumber_kemas", ""))
+              + "/pasang.sh | bash")
         print()
         print(ui.warna("    Selepas itu, buka app dengan menaip:  zakat",
                        ui.W.MALAP))

@@ -8,3 +8,9 @@ __pycache__/
 
 # Salinan kod lama sebelum kemas kini
 .backup/
+
+# Hasil binaan: arkib bertandatangan, tandatangannya, versi.json, dan
+# salinan pasang.sh. Ia dijana semula oleh `alat/bina.sh` pada setiap
+# terbitan, jadi ia tidak boleh masuk git — arkib bertandatangan dalam
+# sejarah git ialah arkib yang boleh ditukar tanpa jejak.
+alat/keluaran/

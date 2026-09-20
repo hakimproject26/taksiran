@@ -28,13 +28,24 @@ CONFIG_LALAI = {
     # Tarikh (YYYY-MM-DD) nisab kali terakhir disahkan dengan pihak zakat.
     # Kosong bermakna belum pernah — app akan mengingatkan setiap suku.
     "nisab_dikemas": "",
-    # Alamat pelayan kemas kini. Boleh ditukar di Tetapan ▸ [3].
+    # Saluran kemas kini. Boleh ditukar di Tetapan ▸ [3].
     #
-    # Ini alamat Tailscale, sama seperti lalai dalam `pasang.sh`. Sebelum ini
-    # ia IP LAN rumah, dan IP LAN berubah bila router memberi alamat baharu —
-    # setiap kali ia berubah, semakan kemas kini mati tanpa bunyi. Alamat
-    # Tailscale kekal, dan ia berfungsi dari mana-mana, bukan hanya WiFi rumah.
-    "sumber_kemas": "http://100.78.29.8:8000",
+    # `latest/download` TIDAK mengandungi nombor versi, jadi alamat ini kekal
+    # sah untuk setiap versi seterusnya.
+    #
+    # Sejarah ringkas, sebab ia menerangkan kenapa ia kelihatan begini:
+    # dahulu IP LAN rumah (berubah bila router memberi alamat baharu, dan
+    # setiap kali ia berubah semakan kemas kini mati tanpa bunyi), kemudian
+    # IP Tailscale mesin tuan, dan sekarang release GitHub. Yang terakhir ini
+    # bukan sekadar lebih senang: ia HTTPS, jadi arkib tidak boleh ditukar
+    # dalam perjalanan, dan mesin tuan tidak perlu hidup.
+    #
+    # Alamat Tailscale lama masih berfungsi kalau GitHub tidak dapat
+    # dicapai — tukar di Tetapan ▸ [3] — tetapi ia kini sandaran, bukan
+    # saluran utama.
+    "sumber_kemas": (
+        "https://github.com/hakimproject26/taksiran/releases/latest/download"
+    ),
     # Semak versi baharu setiap kali app dibuka. Boleh dimatikan kalau
     # ia terasa lambat — lihat Tetapan ▸ [4].
     "semak_kemas": True,
@@ -59,9 +70,50 @@ def tulis(nama, data):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
+# Alamat lalai yang PERNAH dihantar dalam versi yang sudah dipasang di
+# telefon. Padan-tepat sahaja: apa-apa selain senarai ini ialah pilihan tuan
+# sendiri, dan tidak boleh disentuh.
+_SUMBER_LAMA = (
+    "http://100.78.29.8:8000",     # Tailscale, v3.0.0 – v3.1.0
+    "http://10.94.149.204:8000",   # LAN rumah, sebelum v3.0.0
+)
+
+
+def _pindah_sumber(d):
+    """Tukar alamat kemas kini lalai yang LAMA kepada saluran GitHub.
+
+    Kenapa ini perlu wujud sama sekali: `config()` menindih `config.json`
+    yang disimpan DI ATAS `CONFIG_LALAI`, jadi menukar lalai di atas kertas
+    tidak mengubah apa-apa pada telefon yang sudah dipasang. Ia kekal
+    memegang alamat lama selama-lamanya, dan alamat itu kini sandaran yang
+    mungkin tidak hidup.
+
+    Dipanggil dengan config.json YANG DISIMPAN, bukan gabungan dengan lalai,
+    kerana hanya fail itu yang boleh memberitahu kita apa yang tuan sebenarnya
+    ada. Menulis hanya apabila ia benar-benar menukar sesuatu.
+
+    Ia berlaku SEKALI sahaja. Penanda `sumber_dipindah` bermakna kalau tuan
+    sengaja menetapkan semula alamat lama kemudian (kerana GitHub tidak
+    dapat dicapai, contohnya), app tidak akan menentang pilihan itu pada
+    setiap kali dibuka — penolakan berulang terhadap keputusan tuan ialah
+    pepijat, bukan ketegasan.
+    """
+    if not isinstance(d, dict) or d.get("sumber_dipindah"):
+        return None
+    if d.get("sumber_kemas") not in _SUMBER_LAMA:
+        return None
+    d["sumber_kemas"] = CONFIG_LALAI["sumber_kemas"]
+    d["sumber_dipindah"] = True
+    tulis("config.json", d)
+    return d["sumber_kemas"]
+
+
 def config():
+    d = baca("config.json", {})
+    if isinstance(d, dict):
+        _pindah_sumber(d)
     c = dict(CONFIG_LALAI)
-    c.update(baca("config.json", {}))
+    c.update(d)
     return c
 
 
