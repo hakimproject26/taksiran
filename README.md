@@ -412,6 +412,19 @@ app — ia berjalan di latar, dan menu naik serta-merta.
 Sebelum menimpa apa-apa, kod versi semasa disimpan ke `~/.taksiran/backup/`.
 Fail data tidak pernah disentuh.
 
+> **Satu langkah selepas kemas kini pertama ke v3.1.0.** Menu `[6]` tidak
+> boleh menghidupkan Aether sendiri — ia menulis ke `~/.hkm/` dan mengubah
+> baris `alias` dalam `.bashrc`, dan itu di luar folder app. Jadi selepas
+> kemas kini, jalankan sekali:
+>
+> ```bash
+> curl -fsSL http://100.78.29.8:8000/pasang.sh | bash
+> ```
+>
+> App akan memberitahu tuan sendiri kalau langkah ini belum dibuat. Ia tidak
+> berdiam, kerana app yang kelihatan dilindungi sedangkan tidak adalah lebih
+> buruk daripada app yang terang-terang tidak.
+
 Arkib itu membawa **MANIFEST** — senarai setiap fail yang dihantar, dengan
 SHA-256 setiap satu — dan MANIFEST itu ditandatangani. Ia diperiksa
 **sebelum** apa-apa diekstrak, dan sekali lagi **selepas** dipasang. Sebabnya

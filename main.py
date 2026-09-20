@@ -1687,6 +1687,20 @@ def skrin_kemas(cfg):
     print("  Data tuan tidak disentuh — rekod sejarah, event")
     print("  dan tetapan kekal seperti sedia ada.")
     print()
+    if not kemas.aether_aktif():
+        # Kod untuk memeriksa app sudah ada di cakera, tetapi tiada siapa
+        # memanggilnya. Ini diberitahu, bukan didiamkan: app yang kelihatan
+        # dilindungi sedangkan tidak adalah lebih buruk daripada app yang
+        # terang-terang tidak.
+        print(ui.warna("  ! Pemeriksaan kod belum hidup pada peranti ini.",
+                       ui.W.MALAP))
+        print(ui.warna("    Jalankan sekali, di luar app:", ui.W.MALAP))
+        print()
+        print("      curl -fsSL http://100.78.29.8:8000/pasang.sh | bash")
+        print()
+        print(ui.warna("    Selepas itu, buka app dengan menaip:  zakat",
+                       ui.W.MALAP))
+        print()
     ui.jeda("  [ENTER] mula semula app ▸ ")
     mula_semula()
 

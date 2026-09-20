@@ -44,6 +44,9 @@ import urllib.error
 import urllib.request
 
 from .akar import AKAR_KOD, DIR_SALINAN
+
+# Di mana launcher itu tinggal, kalau ia sudah dipasang. Lihat `aether_aktif()`.
+DIR_HKM = os.path.join(os.path.expanduser("~"), ".hkm")
 from . import manifes, tandatangan, versi
 
 AKAR = AKAR_KOD
@@ -342,6 +345,22 @@ def _periksa(laluan, dijangka, teks_sig, data):
     if not ok:
         return False, sebab
     return _sahkan(laluan, dijangka)
+
+
+def aether_aktif():
+    """Betulkah Aether sudah dipasang, dan sedang menjaga app ini?
+
+    Kemas kini DALAM app tidak boleh memasangnya sendiri. Memasang launcher
+    bermakna menulis `~/.hkm/aether.py` dan menukar baris alias dalam
+    `.bashrc` — dua benda di luar folder app, dan dua benda yang app ini
+    tidak patut sentuh tanpa disuruh. Itu kerja `pasang.sh`.
+
+    Jadi keadaannya diperiksa, dan kalau ia belum dipasang, pengguna
+    diberitahu DENGAN JELAS. Versi ini menghantar `aether/aether.py` ke
+    cakera tetapi tidak menggunakannya, dan app yang kelihatan dilindungi
+    sedangkan tidak ialah lebih buruk daripada app yang terang-terang tidak.
+    """
+    return os.path.isfile(os.path.join(DIR_HKM, "aether.py"))
 
 
 def simpan_salinan():
