@@ -39,9 +39,12 @@ tuan dipindahkan secara automatik, dan cara guna app tidak berubah.
   nama pembayar atau isi fail
 - **`kemas._sahkan()` memerlukan MANIFEST**, dan menyemak bahawa MANIFEST
   benar-benar menepati isi arkib. Ini menutup vektor penguncian: satu
-  pepijat binaan yang meninggalkan MANIFEST basi akan mengunci setiap
-  telefon, kerana alat kemas kini berada di dalam app yang terkunci itu.
-  Sekarang ia ditolak semasa pemasangan, ketika versi lama masih utuh
+  pepijat binaan yang meninggalkan MANIFEST basi akan membuatkan Aether
+  menolak app itu pada setiap kali dibuka, dan alias `zakat` mati. Sekarang
+  ia ditolak semasa pemasangan, ketika versi lama masih utuh.
+  (`python ~/taksiran/main.py` kekal berfungsi — Aether menolak untuk
+  MEMBUKA app, ia tidak menyentuh app — tetapi itu bukan sesuatu yang
+  seorang pengguna patut terpaksa tahu)
 - **Fail yang bukan sebahagian daripada pokok bertandatangan akan dibuang**
   semasa kemas kini, dan oleh `aether.py --baiki`. Ukurannya ialah MANIFEST
   yang baharu, bukan beza antara dua MANIFEST — membandingkan lama-lawan-baharu

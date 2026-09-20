@@ -428,8 +428,8 @@ Fail data tidak pernah disentuh.
 Arkib itu membawa **MANIFEST** — senarai setiap fail yang dihantar, dengan
 SHA-256 setiap satu — dan MANIFEST itu ditandatangani. Ia diperiksa
 **sebelum** apa-apa diekstrak, dan sekali lagi **selepas** dipasang. Sebabnya
-ada di bawah, di bahagian Aether: satu MANIFEST yang basi akan mengunci
-telefon, dan alat kemas kininya berada di dalam app yang terkunci itu.
+ada di bawah, di bahagian Aether: satu MANIFEST yang basi akan membuatkan
+Aether menolak app itu pada setiap kali dibuka, dan alias `zakat` mati.
 
 **Kalau pelayan mati**, app jalan seperti biasa tanpa notis. Menu `[6]` akan
 menunjuk mesej ralat dan cara hidupkan pelayan.
@@ -587,6 +587,24 @@ tidak boleh tinggal di dalam benda yang ia baiki: kalau folder app rosak,
 7. Semua lulus → app dibuka
 
 Mana-mana kegagalan: **app tidak dibuka.** Tiada "teruskan juga".
+
+### Kalau ia menolak, adakah app terkunci?
+
+**Tidak.** Aether ialah **launcher**, bukan kurungan. Ia menolak untuk
+**membuka** app; ia tidak menyentuh app itu sendiri. Tiada apa-apa di dalam
+app memanggil Aether, jadi laluan terus sentiasa terbuka:
+
+```bash
+python ~/taksiran/main.py
+```
+
+Itu termasuk menu `[6]` Kemas Kini. Jadi walaupun pokok itu ditolak, tuan
+masih boleh mengemas kini dari dalam app — dan `~/.hkm/aether.py --baiki`
+tidak memerlukan app itu langsung, kerana ia tinggal di luar pokok.
+
+Yang mati ialah **alias `zakat`**. Itu kemudahan yang hilang, bukan telefon
+yang rosak. Tetapi ia cukup mengganggu, jadi ia tetap dianggap kerosakan
+yang mesti dibaiki, bukan sesuatu untuk dibiar.
 
 ### Bila ia menolak
 
