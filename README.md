@@ -1,6 +1,6 @@
 # Taksiran Zakat Pendapatan
 
-**Versi 3.0.0** (19/09/2026)
+**Versi 3.1.0** (20/09/2026)
 
 Kalkulator zakat pendapatan berasaskan terminal untuk Termux (Android).
 
@@ -10,6 +10,28 @@ keluarkan teks siap untuk dihantar ke WhatsApp.
 ---
 
 ## Pasang dalam Termux
+
+Cara biasa — satu baris, dan ia memasang Aether sekali:
+
+```bash
+curl -fsSL http://100.78.29.8:8000/pasang.sh | bash
+```
+
+Kalau pelayan di alamat lain, hulur sebagai argumen:
+
+```bash
+curl -fsSL http://<alamat>:8000/pasang.sh | bash -s http://<alamat>:8000
+```
+
+Tak perlu `pip install` apa-apa — guna pustaka standard Python sahaja.
+
+Selepas ini, buka app dengan menaip:
+
+```bash
+zakat
+```
+
+### Pasang secara manual (kalau tiada pelayan)
 
 ```bash
 pkg install python
@@ -22,7 +44,8 @@ cd ~/taksiran
 python main.py
 ```
 
-Tak perlu `pip install` apa-apa — guna pustaka standard Python sahaja.
+Cara ini **tidak** memasang Aether, jadi tiada pemeriksaan dan tiada menolak.
+Ia berguna untuk membetulkan sesuatu, bukan untuk kegunaan harian.
 
 Untuk semak versi yang sedang dipasang, tanpa buka menu:
 
@@ -34,18 +57,18 @@ Versi juga tertera di kaki menu utama dan dalam **Tetapan**.
 
 ### Shortcut (pilihan)
 
-Supaya boleh taip `zakat` sahaja:
+`pasang.sh` sudah menulis alias ini sendiri, dan ia menulisnya melalui
+Aether:
 
 ```bash
-echo "alias zakat='python ~/taksiran/main.py'" >> ~/.bashrc
-source ~/.bashrc
+alias zakat='python ~/.hkm/aether.py taksiran'
 ```
 
 Untuk butang di skrin utama, letak skrip dalam `~/.shortcuts/`:
 
 ```bash
 mkdir -p ~/.shortcuts
-printf '#!/data/data/com.termux/files/usr/bin/bash\ncd ~/taksiran && python main.py\n' > ~/.shortcuts/zakat
+printf '#!/data/data/com.termux/files/usr/bin/bash\nexec python ~/.hkm/aether.py taksiran\n' > ~/.shortcuts/zakat
 chmod +x ~/.shortcuts/zakat
 ```
 
@@ -386,8 +409,14 @@ Selain menu itu, app juga **semak sendiri setiap kali dibuka**. Kalau ada
 versi baharu, satu notis naik di menu utama. Semakan ini tidak melambatkan
 app — ia berjalan di latar, dan menu naik serta-merta.
 
-Sebelum menimpa apa-apa, kod versi semasa disimpan ke `.backup/`. Fail
-`data/` tidak pernah disentuh.
+Sebelum menimpa apa-apa, kod versi semasa disimpan ke `~/.taksiran/backup/`.
+Fail data tidak pernah disentuh.
+
+Arkib itu membawa **MANIFEST** — senarai setiap fail yang dihantar, dengan
+SHA-256 setiap satu — dan MANIFEST itu ditandatangani. Ia diperiksa
+**sebelum** apa-apa diekstrak, dan sekali lagi **selepas** dipasang. Sebabnya
+ada di bawah, di bahagian Aether: satu MANIFEST yang basi akan mengunci
+telefon, dan alat kemas kininya berada di dalam app yang terkunci itu.
 
 **Kalau pelayan mati**, app jalan seperti biasa tanpa notis. Menu `[6]` akan
 menunjuk mesej ralat dan cara hidupkan pelayan.
@@ -498,8 +527,9 @@ sejarah ke satu fail teks yang boleh dibaca manusia — bukan JSON mentah,
 supaya tuan boleh buka dan sahkan isinya sendiri.
 
 Fail ditulis ke folder utama Termux (`$HOME`), **bukan** dalam folder app.
-Ini disengajakan: kalau app dipasang semula atau folder app dipadam, fail
-eksport masih selamat.
+Ini disengajakan, dan sejak v3.1.0 ia juga **perlu**: Aether memeriksa
+setiap fail dalam folder app, jadi fail eksport yang ditulis ke dalamnya
+akan membuatkan app menolak dirinya sendiri selepas setiap eksport.
 
 ```
 ~/taksiran-eksport-20260917-2320.txt
@@ -509,10 +539,92 @@ Salinannya juga dimasukkan ke clipboard, jadi boleh terus tampal ke e-mel
 atau nota.
 
 > **Fail ini mengandungi nama pembayar sebenar.** Simpan di tempat yang
-> selamat. Sebab itulah `data/` dan fail eksport tidak pernah masuk git.
+> selamat. Sebab itulah `~/.taksiran/` dan fail eksport tidak pernah masuk
+> git.
 
 **Import tidak disediakan.** Buat masa ini eksport untuk backup dan
 rujukan sahaja. Kalau tuan perlukan import semula, beritahu.
+
+---
+
+## Aether — polis dalam app
+
+Tandatangan di atas memeriksa **arkib semasa ia dimuat turun**. Selepas arkib
+itu diekstrak, tiada apa-apa lagi yang diperiksa. Sesiapa yang boleh menulis
+ke folder app — skrip lain, atau akses terus kepada telefon — boleh mengubah
+`zakat/kira.py` dan app itu akan menjalankannya tanpa satu pun isyarat.
+
+Aether menutup jurang itu. Ia menyemak **apa yang ada di cakera sekarang**,
+setiap kali app dibuka, dan **Aether yang membuka app** — bukan app yang
+memanggil Aether. Itu penting: app yang memanggil polis boleh melangkau
+panggilan itu dengan membuang satu baris.
+
+Ia dipasang di `~/.hkm/aether.py`, **di luar** folder app. Alat pembaikan
+tidak boleh tinggal di dalam benda yang ia baiki: kalau folder app rosak,
+`~/.hkm/aether.py` masih ada untuk menjalankannya.
+
+### Apa yang diperiksa setiap kali `zakat` ditaip
+
+1. Baca `MANIFEST` dan `MANIFEST.sig`
+2. Sahkan tandatangan guna kunci tersemat — gagal = `TANDA_TIDAK_SAH`
+3. Banding cap jari kunci dengan yang terakhir dilihat — `KUNCI_BAHARU`
+4. Versi dalam MANIFEST lebih rendah daripada yang terakhir dilihat — `TURUN_VERSI`
+5. Kira SHA-256 setiap fail tersenarai — tak padan = `MANIFEST_BERUBAH`
+6. Kesan fail **tambahan**, dan tolak apa-apa yang bukan fail biasa
+7. Semua lulus → app dibuka
+
+Mana-mana kegagalan: **app tidak dibuka.** Tiada "teruskan juga".
+
+### Bila ia menolak
+
+```bash
+python ~/.hkm/aether.py --alert      # apa yang dicatat, dan bila
+python ~/.hkm/aether.py --baiki taksiran   # muat turun semula dan pasang semula
+```
+
+`--baiki` mengambil semula daripada saluran bertandatangan. Ia **bukan**
+pemulihan automatik dan ia tidak menyentuh `~/.taksiran/data/` — data tuan
+tidak pernah menjadi sebahagian daripada soal ini.
+
+Kalau app ditolak kerana ada fail yang bukan sebahagian daripada pokok
+bertandatangan, `--baiki` membuang fail itu. Ia selamat kerana folder app
+ialah **kod sahaja** sejak v3.1.0; tiada data pengguna di dalamnya.
+
+### Had yang mesti diketahui — dan ia nyata
+
+**Termux ialah satu app dengan satu UID.** Aether, app, dan sesiapa yang
+boleh menulis ke telefon berkongsi keistimewaan yang sama. Aether bukan polis
+yang berdiri di luar rumah; ia polis yang tinggal di dalam rumah yang sama.
+
+Yang kita dapat bukan **halangan**, tetapi **jejak**. Setiap penolakan
+dicatat dalam `~/.hkm/alert.jsonl` — app, kod alert, masa, versi, dan laluan
+kod. Rekod-rekod itu dirantai dengan hash (`seq`, `prev_hash`, `hash`), jadi
+memotong atau menyuntingnya meninggalkan bukti. Rekod itu **tidak pernah**
+mengandungi nama pembayar, rekod kiraan, atau isi fail.
+
+Harga privasi yang mesti ditulis, bukan disimpan dalam kepala: **cap masa
+mendedahkan corak penggunaan.** Itu kos sebenar daripada janji "tiada data
+pengguna".
+
+**Aether tidak boleh menyemak dirinya sendiri.** Setiap fail yang boleh
+dibandingkan dengan dirinya boleh ditulis oleh benda yang ia pertahankan.
+`chmod 500` boleh dipulihkan oleh UID yang sama. Yang tinggal hanyalah
+tripwire, dan Balai yang mengesahkannya kemudian. Aether **mengesan**; ia
+tidak **menghalang**.
+
+**Ia bukan sandbox.** `sitecustomize.py` dan fail `.pth` diimport sebelum
+baris pertama `aether.py` berjalan. Sesiapa yang menaip
+`python ~/taksiran/main.py` terus melangkau Aether sepenuhnya.
+
+**Ada tetingkap masa.** Aether hash, kemudian menjalankan; penyerang dengan
+UID yang sama boleh menukar fail dalam tetingkap itu. Tiada keatoman di sini.
+
+**Kalau `--baiki` tidak menolong** — contohnya kalau kunci itu sendiri
+tertukar, atau pelayan tidak dapat dihubungi — pasang semula terus:
+
+```bash
+curl -fsSL http://100.78.29.8:8000/pasang.sh | bash
+```
 
 ---
 
@@ -531,21 +643,40 @@ taksiran/
 │   ├── cetak.py         jana teks WhatsApp
 │   ├── readme.py        catatan pembinaan
 │   ├── kemas.py         enjin kemas kini
+│   ├── manifes.py       penghurai MANIFEST (sebelum ekstrak)
+│   ├── akar.py          pindahkan data keluar folder app
 │   ├── nisab.py         peringatan suku + nisab ikut tahun
 │   ├── eksport.py       eksport data ke teks
 │   └── versi.py         nombor versi
-├── data/                terhasil sendiri
+└── aether/              salinan launcher (dipasang ke ~/.hkm/)
+```
+
+Data **tidak** tinggal di sini lagi. Sejak v3.1.0 ia di luar folder app:
+
+```
+~/.taksiran/
+├── data/
 │   ├── config.json      kadar, nisab tahun semasa, tolakan
 │   ├── nisab.json       nisab tahun-tahun lalu
 │   ├── event.json       event aktif
 │   └── sejarah.json     rekod kiraan
-└── .backup/             kod versi lama, sebelum ditimpa
+└── backup/              kod versi lama, sebelum ditimpa
 ```
 
-Semua data dalam folder `data/` — backup dengan salin folder itu sahaja.
+Backup dengan salin `~/.taksiran/` sahaja.
 
-`data/` sengaja **tidak** dimasukkan ke dalam git — ia menyimpan nama
-pembayar dan rekod sebenar.
+Ini bukan kekemasan. Aether (di bawah) memeriksa **setiap fail** dalam folder
+app terhadap senarai bertandatangan, jadi apa-apa yang app tulis sendiri ke
+dalam folder itu akan kelihatan seperti pengubahsuaian — dan app akan menolak
+dirinya sendiri. Memisahkan kod daripada data menjadikan folder app **kod
+sahaja**, dan itu sifat yang boleh dituntut, bukan diharap.
+
+Folder `~/.taksiran/` sengaja **tidak** dimasukkan ke dalam git — ia menyimpan
+nama pembayar dan rekod sebenar.
+
+Pemindahan berlaku sendiri pada kali pertama app dibuka selepas kemas kini:
+folder lama dipindahkan, bukan disalin, dan kalau pemindahan gagal app
+berhenti dengan ayat yang jelas daripada mula dengan data kosong.
 
 ---
 

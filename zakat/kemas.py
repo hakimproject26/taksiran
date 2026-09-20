@@ -22,16 +22,18 @@ kemudian.
 
 Yang SENGAJA tidak dibuat di sini:
 
-  * Tiada rollback automatik. Salinan lama disimpan dalam .backup/,
+  * Tiada rollback automatik. Salinan lama disimpan dalam `~/.taksiran/backup/`,
     tetapi memulihkannya masih kerja tangan.
   * Tiada suis untuk mematikan pengesahan tandatangan. Suis begitu ialah
     laluan pintas, dan laluan pintas ialah tempat penyerang menekan.
 
-Fail `data/` tidak pernah disentuh — arkib yang dibina memang
-mengecualikannya, dan pengekstrakan hanya menimpa fail yang ada di dalam
-arkib.
+Data pengguna tidak pernah disentuh, dan sejak v3.1.0 itu SIFAT, bukan janji:
+`data/` dan `backup/` tinggal di `~/.taksiran/`, di luar folder app yang
+ditimpa oleh pengekstrakan. Lihat `zakat/akar.py`. `bina.sh` masih
+mengecualikan `data/` daripada arkib, tetapi itu kini tali pinggang kedua.
 """
 
+import hashlib
 import json
 import os
 import re
@@ -41,10 +43,10 @@ import tempfile
 import urllib.error
 import urllib.request
 
-from . import tandatangan, versi
+from .akar import AKAR_KOD, DIR_SALINAN
+from . import manifes, tandatangan, versi
 
-AKAR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DIR_SALINAN = os.path.join(AKAR, ".backup")
+AKAR = AKAR_KOD
 
 NAMA_VERSI = "versi.json"
 NAMA_ARKIB = "taksiran.tar.gz"
@@ -76,7 +78,7 @@ _RE_KAWAL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
 def _betulkan(sumber):
     """Kemas URL yang ditaip pengguna.
 
-    Terima '10.94.149.204:8000' sepatah — tambah 'http://' sendiri.
+    Terima '100.78.29.8:8000' sepatah — tambah 'http://' sendiri.
     """
     s = (sumber or "").strip().rstrip("/")
     if s and "://" not in s:
@@ -194,6 +196,85 @@ def semak(sumber):
 
 # ----------------------------------------------------------------- pasang
 
+def _hash_ahli(tf, ahli):
+    """SHA-256 satu ahli arkib. Pemanggil sudah memastikan ia fail biasa."""
+    f = tf.extractfile(ahli)
+    if f is None:
+        raise tarfile.TarError(f"tak dapat baca {ahli.name}")
+    h = hashlib.sha256()
+    while True:
+        blok = f.read(1 << 20)
+        if not blok:
+            break
+        h.update(blok)
+    return h.hexdigest()
+
+
+def _sahkan_manifes(tf, awalan, nama):
+    """Bandingkan MANIFEST dalam arkib dengan isi arkib itu sendiri.
+
+    Pulang (ok, mesej). Dipanggil SEBELUM apa-apa diekstrak.
+
+    Ini pemeriksaan yang menghalang telefon daripada terkunci. Kalau
+    MANIFEST yang dihantar basi — dijana sebelum satu fail terakhir
+    disunting — maka Aether akan menolak app itu pada setiap kali dibuka
+    selepas ia dipasang, dan alat kemas kini berada di dalam app itu.
+    Menangkapnya di sini bermakna versi lama masih utuh dan masih boleh
+    memuat turun pembaikan.
+    """
+    try:
+        f = tf.extractfile(awalan + manifes.NAMA)
+        teks_manifes = f.read().decode("utf-8", "replace") if f else ""
+        f = tf.extractfile(awalan + manifes.NAMA_SIG)
+        teks_sig = f.read().decode("ascii", "replace") if f else ""
+    except (tarfile.TarError, OSError, UnicodeDecodeError) as e:
+        return False, f"Tak dapat baca MANIFEST dalam arkib ({e})."
+
+    # Tandatangan MANIFEST disemak walaupun arkib itu sendiri sudah
+    # ditandatangani. Ia berlebihan untuk KESAHIHAN, tetapi bukan untuk
+    # kebolehgunaan: `MANIFEST.sig` yang rosak akan mengunci telefon, dan
+    # satu-satunya tempat ia boleh ditangkap ialah di sini.
+    ok, sebab = tandatangan.sahkan(teks_sig, teks_manifes.encode("utf-8"))
+    if not ok:
+        return False, f"Tandatangan MANIFEST tidak sah — {sebab}"
+
+    try:
+        _kepala, entri = manifes.hurai(teks_manifes)
+    except manifes.ManifesRalat as e:
+        return False, f"MANIFEST tidak boleh dipercayai — {e}"
+
+    cincang = {}
+    for m in tf.getmembers():
+        if not m.name.startswith(awalan):
+            continue
+        relatif = m.name[len(awalan):]
+        if not relatif:
+            continue
+        # Folder dalam arkib hanyalah bekas; ia tidak dihantar sebagai fail
+        # dan ia tidak disenaraikan.
+        if m.isdir():
+            continue
+        # Symlink, peranti, fifo. Kita tidak pernah menghantar ini, dan
+        # `data_filter` MEMBENARKAN symlink relatif dalam pokok — jadi ia
+        # mesti ditolak di sini, sebelum apa-apa diekstrak.
+        if not m.isfile():
+            return False, (f"Arkib mengandungi {relatif} yang bukan fail "
+                           f"biasa — kemas kini dibatalkan.")
+        cincang[relatif] = _hash_ahli(tf, m)
+
+    masalah = manifes.banding(entri, cincang)
+    if masalah:
+        senarai = "\n".join(f"         {m}" for m in masalah[:5])
+        lagi = f"\n         … dan {len(masalah) - 5} lagi" if len(masalah) > 5 else ""
+        return False, (
+            "MANIFEST tidak menepati isi arkib — kemas kini dibatalkan.\n"
+            "       Ini pepijat binaan, bukan serangan. Kalau ia dipasang,\n"
+            "       app itu akan menolak dirinya sendiri setiap kali dibuka.\n"
+            f"{senarai}{lagi}"
+        )
+    return True, ""
+
+
 def _sahkan(laluan, dijangka):
     """Periksa arkib SEBELUM ia menyentuh apa-apa.
 
@@ -214,9 +295,22 @@ def _sahkan(laluan, dijangka):
                 return False, "Arkib mesti ada tepat satu folder akar."
             awalan = akar.pop() + "/"
 
-            for p in ("main.py", "zakat/versi.py"):
+            # MANIFEST dan MANIFEST.sig WAJIB. Aether memerlukan kedua-duanya
+            # untuk membuka app itu, jadi arkib tanpanya ialah telefon yang
+            # terkunci — lebih baik ditolak di sini, semasa versi lama masih
+            # boleh memuat turun pembaikan.
+            for p in ("main.py", "zakat/versi.py",
+                      manifes.NAMA, manifes.NAMA_SIG):
                 if awalan + p not in nama:
-                    return False, f"Arkib tak lengkap — {p} tiada."
+                    return False, (
+                        f"Arkib tak lengkap — {p} tiada.\n"
+                        f"       Tanpa MANIFEST, app yang dipasang tidak akan "
+                        f"boleh dibuka semula."
+                    )
+
+            ok, mesej = _sahkan_manifes(tf, awalan, nama)
+            if not ok:
+                return False, mesej
 
             f = tf.extractfile(awalan + "zakat/versi.py")
             teks = f.read().decode("utf-8", "replace") if f else ""
@@ -251,7 +345,7 @@ def _periksa(laluan, dijangka, teks_sig, data):
 
 
 def simpan_salinan():
-    """Simpan kod versi semasa ke .backup/ sebelum ia ditimpa.
+    """Simpan kod versi semasa ke `~/.taksiran/backup/` sebelum ia ditimpa.
 
     Bukan rollback automatik — cuma jaring keselamatan supaya kod lama
     masih boleh dipulihkan dengan tangan kalau sesuatu jadi tidak kena.
@@ -265,6 +359,80 @@ def simpan_salinan():
             if os.path.exists(p):
                 tf.add(p, arcname=awalan + item)
     return laluan
+
+
+def _manifes_dalam_arkib(laluan):
+    """Senarai laluan dalam MANIFEST arkib, atau None kalau ia tidak boleh dibaca."""
+    try:
+        with tarfile.open(laluan, "r:gz") as tf:
+            nama = tf.getnames()
+            akar = {n.split("/")[0] for n in nama if "/" in n}
+            if len(akar) != 1:
+                return None
+            awalan = akar.pop() + "/"
+            f = tf.extractfile(awalan + manifes.NAMA)
+            teks = f.read().decode("utf-8", "replace") if f else ""
+        _kepala, entri = manifes.hurai(teks)
+        return {laluan for _, laluan in entri}
+    except (tarfile.TarError, OSError, manifes.ManifesRalat):
+        return None
+
+
+def _fail_di_pokok(akar):
+    """Setiap fail dalam pokok app, relatif kepada `akar`.
+
+    Folder tidak dipulangkan. Symlink dipulangkan — ia mesti dikenal pasti
+    dan dibuang, bukan dilangkau.
+    """
+    dijumpai = set()
+    for asas, folder, fail in os.walk(akar, followlinks=False):
+        for f in fail:
+            penuh = os.path.join(asas, f)
+            dijumpai.add(os.path.relpath(penuh, akar).replace(os.sep, "/"))
+        # Jangan turun ke dalam folder yang bukan kod.
+        folder[:] = [d for d in folder
+                     if not manifes.abaikan(
+                         os.path.relpath(os.path.join(asas, d), akar)
+                         .replace(os.sep, "/"))]
+    return dijumpai
+
+
+def _bersihkan_asing(akar, baharu):
+    """Selaraskan pokok app dengan MANIFEST yang bertandatangan.
+
+    Pengekstrakan hanya MENULIS fail yang ada dalam arkib; ia tidak membuang
+    apa-apa. Jadi pokok itu boleh mengandungi fail yang bukan sebahagian
+    daripada kod bertandatangan:
+
+      * Modul yang dipadamkan daripada kod pada versi baharu. Fail lama
+        kekal, Aether melihatnya sebagai "dalam arkib, tiada dalam MANIFEST",
+        dan app itu menolak dirinya sendiri setiap kali dibuka. Alat kemas
+        kini berada DI DALAM app itu — jadi tiada jalan pulang.
+      * Fail yang ditambah kemudian oleh sesiapa sahaja, atau oleh tuan
+        sendiri secara tidak sengaja.
+
+    Keselamatan fungsi ini bergantung pada satu perkara: ia memadam HANYA
+    fail yang tidak disenaraikan dalam MANIFEST yang baru sahaja disahkan.
+    Pokok app ini kod sahaja — data pengguna berada di `~/.taksiran/` sejak
+    v3.1.0 — jadi apa-apa yang tidak ditandatangani memang bukan miliknya.
+    """
+    asing = []
+    for laluan in sorted(_fail_di_pokok(akar)):
+        if laluan in baharu or laluan in (manifes.NAMA, manifes.NAMA_SIG):
+            continue
+        if manifes.abaikan(laluan):
+            continue
+        asing.append(laluan)
+
+    dibuang = []
+    for laluan in asing:
+        penuh = os.path.join(akar, laluan)
+        try:
+            os.unlink(penuh)
+            dibuang.append(laluan)
+        except OSError:
+            pass
+    return dibuang
 
 
 def _ekstrak(laluan, ke):
@@ -360,6 +528,14 @@ def pasang(sumber, versi_dijangka, lapor=None):
         lapor("Menyimpan salinan lama …")
         simpan_salinan()
         lapor(f"  ✓ {os.path.basename(DIR_SALINAN)}/")
+
+        # SELEPAS salinan lama (supaya modul yang akan dibuang ada dalam
+        # sandaran), dan SEBELUM pengekstrakan. Lihat `_bersihkan_asing()`.
+        baharu = _manifes_dalam_arkib(tmp.name)
+        if baharu is not None:
+            dibuang = _bersihkan_asing(AKAR, baharu)
+            if dibuang:
+                lapor(f"  ✓ {len(dibuang)} fail lama/asing dibuang")
 
         lapor("Memasang …")
         try:

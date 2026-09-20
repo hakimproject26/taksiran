@@ -1,10 +1,18 @@
-"""Baca dan tulis data JSON — config, event, sejarah."""
+"""Baca dan tulis data JSON — config, event, sejarah.
+
+Lokasi `data/` ditentukan oleh `zakat/akar.py`, dan ia berada DI LUAR folder
+app dengan sengaja. Lihat docstring di sana: kod dan data tidak boleh
+berkongsi folder, kerana kemas kini menimpa folder itu sepenuhnya.
+"""
 
 import json
 import os
 
-AKAR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DIR_DATA = os.path.join(AKAR, "data")
+from .akar import AKAR_KOD, DIR_DATA
+
+# Masih dieksport kerana nama ini sudah lama wujud. `AKAR_KOD` ialah nama
+# yang jujur: ia folder kod, bukan folder data.
+AKAR = AKAR_KOD
 
 
 CONFIG_LALAI = {
@@ -21,7 +29,12 @@ CONFIG_LALAI = {
     # Kosong bermakna belum pernah — app akan mengingatkan setiap suku.
     "nisab_dikemas": "",
     # Alamat pelayan kemas kini. Boleh ditukar di Tetapan ▸ [3].
-    "sumber_kemas": "http://10.94.149.204:8000",
+    #
+    # Ini alamat Tailscale, sama seperti lalai dalam `pasang.sh`. Sebelum ini
+    # ia IP LAN rumah, dan IP LAN berubah bila router memberi alamat baharu —
+    # setiap kali ia berubah, semakan kemas kini mati tanpa bunyi. Alamat
+    # Tailscale kekal, dan ia berfungsi dari mana-mana, bukan hanya WiFi rumah.
+    "sumber_kemas": "http://100.78.29.8:8000",
     # Semak versi baharu setiap kali app dibuka. Boleh dimatikan kalau
     # ia terasa lambat — lihat Tetapan ▸ [4].
     "semak_kemas": True,

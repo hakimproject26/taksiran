@@ -201,7 +201,17 @@ def jana(cfg, ev, rekod, jadual=None, hari_ini=None):
 
 
 def laluan_keluar(hari_ini=None):
-    """~/taksiran-eksport-YYYYMMDD-HHMM.txt"""
+    """~/taksiran-eksport-YYYYMMDD-HHMM.txt
+
+    SENSITIF: laluan ini mesti kekal DI LUAR pokok app. Aether memeriksa
+    setiap fail dalam folder app terhadap MANIFEST yang ditandatangani pada
+    setiap kali app dibuka, jadi fail eksport yang ditulis ke dalam pokok
+    itu akan kelihatan seperti pengubahsuaian — dan app akan menolak untuk
+    melancarkan dirinya selepas setiap eksport.
+
+    (~ juga membawa maksud kedua: fail ini mengandungi nama pembayar. Ia
+    tidak sepatutnya berada dalam folder yang ditimpa oleh kemas kini.)
+    """
     kini = hari_ini or datetime.now()
     nama = f"taksiran-eksport-{kini.strftime('%Y%m%d-%H%M')}.txt"
     return os.path.join(os.path.expanduser("~"), nama)

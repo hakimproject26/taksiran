@@ -12,6 +12,74 @@ Ukurannya bukan berapa banyak kerja, tapi berapa besar kesannya pada pengguna.
 
 ---
 
+## [3.1.0] — 20/09/2026
+
+Kod diperiksa setiap kali app dibuka, bukan hanya semasa ia dimuat turun.
+
+**Sebab versi ini MINOR:** tiada apa-apa yang lama berhenti berfungsi. Data
+tuan dipindahkan secara automatik, dan cara guna app tidak berubah.
+
+**Ditambah:**
+
+- **`MANIFEST` + `MANIFEST.sig` dalam arkib.** Senarai setiap fail yang
+  dihantar, dengan SHA-256 setiap satu, ditandatangani dengan kunci yang
+  sama. Ia membolehkan cakera diperiksa selepas pemasangan — tandatangan
+  arkib hanya membuktikan apa kod itu semasa ia dimuat turun; ia tidak tahu
+  apa-apa tentang fail itu kemudiannya
+- **`aether/aether.py`** — polis app. Ia **melancarkan** app, bukan
+  dipanggil oleh app: app yang memanggil polis boleh melangkau panggilan itu
+  dengan membuang satu baris. Setiap kali app dibuka ia mengira semula hash
+  setiap fail, menolak fail tambahan, dan menolak apa-apa yang bukan fail
+  biasa
+- **`pasang.sh` memasang Aether ke `~/.hkm/`** — di luar pokok app, kerana
+  alat pembaikan tidak boleh tinggal di dalam benda yang ia baiki. Kalau
+  pokok app rosak, `~/.hkm/aether.py --baiki taksiran` masih berfungsi
+- **Rekod alert `~/.hkm/alert.jsonl`** — baris gilir append-only dengan
+  rantaian hash. Ia hanya membawa laluan kod dan kod alert, **tidak pernah**
+  nama pembayar atau isi fail
+- **`kemas._sahkan()` memerlukan MANIFEST**, dan menyemak bahawa MANIFEST
+  benar-benar menepati isi arkib. Ini menutup vektor penguncian: satu
+  pepijat binaan yang meninggalkan MANIFEST basi akan mengunci setiap
+  telefon, kerana alat kemas kini berada di dalam app yang terkunci itu.
+  Sekarang ia ditolak semasa pemasangan, ketika versi lama masih utuh
+- **Fail yang bukan sebahagian daripada pokok bertandatangan akan dibuang**
+  semasa kemas kini, dan oleh `aether.py --baiki`. Ukurannya ialah MANIFEST
+  yang baharu, bukan beza antara dua MANIFEST — membandingkan lama-lawan-baharu
+  tidak menangkap fail yang tidak pernah berada dalam mana-mana MANIFEST, dan
+  itulah yang paling senang terhasil. Tanpa ini, satu fail asing di dalam
+  folder app menolaknya **selamanya**, kerana alat kemas kininya berada di
+  dalam folder itu
+
+**Diubah:**
+
+- **Data tuan berpindah ke `~/.taksiran/`** — `data/` dan `backup/`, keluar
+  daripada folder app. Sebelum ini setiap rekod yang disimpan kelihatan
+  seperti pengubahsuaian kepada kod, dan `kemas.pasang()` menulis ke dalam
+  folder yang sama dengan data pembayar. Pemindahan berlaku sendiri pada
+  kali pertama app dibuka; salinan lama ditinggalkan, tidak dipadam
+- **`bina.sh` membina pokok staging** daripada senarai masuk, bukan
+  menapis dengan `--exclude`. `--exclude='data'` padan mana-mana komponen
+  laluan, jadi satu `zakat/data/` pada masa depan akan digugurkan tanpa
+  bunyi
+- **`bina.sh` menyemak arkib dengan pengesah app sendiri** sebelum
+  menerbitkannya — kod yang sama yang akan berjalan di telefon
+- **`alat/tanda.py padan` menyemak TIGA salinan kunci**, bukan dua.
+  Aether ialah salinan ketiga, dan ia yang paling mudah dilupakan
+
+**Dibaiki:**
+
+- **`pasang.sh` mengganti alias, bukan menambah-jika-tiada.** Versi lama
+  hanya menulis alias `zakat` apabila tiada baris padan, jadi pemasangan
+  semula tidak pernah menulis alias baharu — launcher itu senyap-senyap
+  tidak pernah berkuat kuasa
+
+**Had yang tidak berubah:** Aether mengesan, ia tidak menghalang. Termux
+ialah satu app dengan satu UID, jadi Aether berkongsi keistimewaan dengan
+benda yang ia periksa. Ia boleh memberi bukti; ia tidak boleh memberi
+halangan.
+
+---
+
 ## [3.0.0] — 19/09/2026
 
 Setiap kemas kini kini ditandatangani dan diperiksa sebelum dipasang.

@@ -27,6 +27,7 @@ tidak perlu menanya frasa laluan. Jadi `bina.sh` menanya SEKALI sahaja.
 """
 
 import os
+import re
 import subprocess
 import sys
 
@@ -216,17 +217,50 @@ def pem():
     print("-----END PUBLIC KEY-----")
 
 
-def padan(pasang_sh):
-    """Pastikan kunci dalam pasang.sh SAMA dengan kunci dalam kod app.
+# Aether memegang salinan kunci yang KETIGA, dan ia salinan yang paling
+# mudah dilupakan: ia fail berasingan, dalam repo berasingan, dan tiada
+# import menghubungkannya dengan app. Kalau ia menyimpang, Aether menolak
+# setiap arkib yang sah — jadi setiap telefon terkunci oleh polisnya sendiri.
+AETHER = os.path.join(os.path.expanduser("~"), "HKM", "aether", "aether.py")
 
-    Dua tempat memegang kunci awam: `zakat/tandatangan.py` (untuk kemas kini
-    dari dalam app) dan `pasang.sh` (untuk pemasangan pertama). Kalau
-    kedua-duanya menyimpang, arkib yang sah akan DITOLAK pada pemasangan
-    pertama — dan itu berlaku kepada orang yang belum ada app untuk
+_RE_KUNCI_AETHER = re.compile(r"KUNCI\s*=\s*\[(.*?)\]", re.S)
+_RE_HEX_AETHER = re.compile(r'bytes\.fromhex\(\s*"([0-9a-fA-F]{64})"\s*\)')
+
+
+def _kunci_aether(laluan=None):
+    """Kunci yang tersemat dalam aether.py, dibaca dengan REGEX.
+
+    Tidak pernah `import` fail itu: ia kod yang berdiri sendiri, dan
+    mengimportnya bermakna menjalankannya.
+    """
+    laluan = laluan or AETHER
+    if not os.path.exists(laluan):
+        return None
+    teks = open(laluan, encoding="utf-8").read()
+    blok = _RE_KUNCI_AETHER.search(teks)
+    if not blok:
+        sys.exit(f"Ralat: tak jumpa blok KUNCI dalam {laluan}.")
+    kunci = [bytes.fromhex(h) for h in _RE_HEX_AETHER.findall(blok.group(1))]
+    if not kunci:
+        sys.exit(f"Ralat: blok KUNCI dalam {laluan} kosong atau tidak sah.")
+    return kunci
+
+
+def padan(pasang_sh):
+    """Pastikan TIGA salinan kunci awam itu sama.
+
+    Tiga tempat memegang kunci awam, dan ketiga-tiganya mempunyai jalan
+    gagal yang berbeza:
+
+      zakat/tandatangan.py  kemas kini dari DALAM app
+      pasang.sh             pemasangan PERTAMA, sebelum app wujud
+      ~/HKM/aether/aether.py  setiap kali app dibuka, oleh launcher
+
+    Kalau mana-mana menyimpang, arkib yang sah ditolak — dan dua daripada
+    tiga kes itu berlaku kepada orang yang belum ada app untuk
     membetulkannya. Jadi ia diperiksa setiap binaan, bukan diharap.
     """
     import base64
-    import re
 
     sys.path.insert(0, AKAR)
     from zakat import tandatangan as T
@@ -270,6 +304,23 @@ def padan(pasang_sh):
 
     print(f"  ✓ kunci pasang.sh padan dengan app "
           f"({T.cap_jari(awam_pasang)})")
+
+    kunci_aether = _kunci_aether()
+    if kunci_aether is None:
+        print(f"  ! {AETHER} tiada — salinan kunci Aether tidak diperiksa")
+        return
+    hilang = [k for k in T.KUNCI if k not in kunci_aether]
+    if hilang:
+        sys.exit(
+            f"Ralat: Aether tidak percaya kunci yang app percaya.\n"
+            f"       app    : {T.cap_jari(penuh=True)}\n"
+            f"       Aether : {', '.join(T.cap_jari(k, penuh=True) for k in kunci_aether)}\n"
+            f"       Setiap arkib yang sah akan ditolak oleh Aether — jadi\n"
+            f"       setiap telefon terkunci oleh polisnya sendiri.\n"
+            f"       Betulkan dengan: python3 alat/tanda.py pem"
+        )
+    print(f"  ✓ kunci Aether padan dengan app "
+          f"({', '.join(T.cap_jari(k) for k in kunci_aether)})")
 
 
 def main():

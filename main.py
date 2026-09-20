@@ -8,7 +8,7 @@ import threading
 from datetime import date, datetime
 from decimal import Decimal
 
-from zakat import (cetak, eksport, kemas, nisab, qadha, readme, store,
+from zakat import (akar, cetak, eksport, kemas, nisab, qadha, readme, store,
                    tandatangan, ui, versi)
 from zakat.kira import Hasil, Tolakan, kira_kaedah_a, kira_kaedah_b
 
@@ -1237,7 +1237,7 @@ def menu_tetapan():
             skrin_readme()
         elif pilih == "3":
             print()
-            print(ui.warna("  Contoh: http://10.94.149.204:8000", ui.W.MALAP))
+            print(ui.warna("  Contoh: http://100.78.29.8:8000", ui.W.MALAP))
             print(ui.warna("  Alamat folder yang ada versi.json dan taksiran.tar.gz.",
                            ui.W.MALAP))
             print()
@@ -1768,6 +1768,17 @@ def main():
     if len(sys.argv) > 1 and sys.argv[1] in ("--versi", "-v"):
         print(versi.penuh())
         return 0
+    # SEBELUM apa-apa membaca config. Kalau ini gagal, app mesti berhenti —
+    # bukan teruskan dengan folder data yang kosong. Lihat zakat/akar.py.
+    try:
+        pesan = []
+        if akar.pindah(pesan.append):
+            for b in pesan:
+                print(b)
+            print()
+    except akar.RalatAkar as e:
+        print(f"\n  ✗ {e}\n")
+        return 1
     semak_kemas_awal(store.config())
     try:
         menu_utama()
