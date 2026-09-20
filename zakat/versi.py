@@ -13,16 +13,16 @@ pengguna. Buang satu feature = MAJOR, walaupun kerjanya sepuluh minit.
 Setiap kali nombor ini naik, catat sebabnya dalam CHANGELOG.md.
 """
 
-NOMBOR = "2.0.2"
-TARIKH = "18/09/2026"
+NOMBOR = "3.0.0"
+TARIKH = "19/09/2026"
 
 # Apa yang berubah pada versi SEMASA. Dipaparkan pada skrin Kemas Kini,
 # dan dihantar ke app lain melalui versi.json di pelayan.
 # Sejarah penuh ada dalam CHANGELOG.md.
 NOTA = [
-    "Cetakan qadha: angka tepat sampai sen — tiada lagi pembundaran",
-    "ke ringgit, jadi jumlahnya benar-benar berjumlah dengan barisnya",
-    "Setiap tahun kini tiga baris: tahun + nisab, kasar + zakat",
+    "Setiap kemas kini kini ditandatangani dan disahkan sebelum",
+    "dipasang — pelayan yang diceroboh tidak lagi boleh menghantar",
+    "kod sendiri. Ini perubahan cara kerja, sebab itu MAJOR",
     "Tiada perubahan pada kiraan atau pada data tuan",
 ]
 

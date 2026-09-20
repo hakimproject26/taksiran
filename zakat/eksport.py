@@ -13,7 +13,7 @@ import os
 import subprocess
 from datetime import datetime
 
-from . import cetak, nisab, qadha, versi
+from . import cetak, nisab, qadha, tandatangan, versi
 from .kira import Hasil
 
 GARIS = "=" * 62
@@ -134,6 +134,9 @@ def jana(cfg, ev, rekod, jadual=None, hari_ini=None):
     L.append(_baris("Gaya output print",
                     cetak.nama_gaya(cfg.get("gaya", cetak.GAYA_LALAI))))
     L.append(_baris("Sumber kemas kini", cfg.get("sumber_kemas", "") or "(kosong)"))
+    # Kunci awam, bukan rahsia — selamat dieksport, dan berguna apabila
+    # menyiasat kenapa sesuatu kemas kini ditolak.
+    L.append(_baris("Kunci tandatangan", tandatangan.cap_jari(penuh=True)))
     L.append("")
 
     L.append("NISAB IKUT TAHUN")

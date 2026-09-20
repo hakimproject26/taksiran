@@ -1,6 +1,6 @@
 # Taksiran Zakat Pendapatan
 
-**Versi 2.0.2** (18/09/2026)
+**Versi 3.0.0** (19/09/2026)
 
 Kalkulator zakat pendapatan berasaskan terminal untuk Termux (Android).
 
@@ -405,9 +405,15 @@ menunjuk mesej ralat dan cara hidupkan pelayan.
 bash ~/serve-zakat/bina.sh
 ```
 
-Ia menghasilkan dua fail: `taksiran.tar.gz` (kod) dan `versi.json` (nombor
-versi + nota). Kedua-duanya dibaca daripada `zakat/versi.py` yang sama,
-jadi nombornya tak akan tak selaras.
+Ia menghasilkan **tiga** fail: `taksiran.tar.gz` (kod), `taksiran.tar.gz.sig`
+(tandatangan bagi arkib itu), dan `versi.json` (nombor versi + nota).
+`versi.json` dibaca daripada `zakat/versi.py` yang sama yang app guna, jadi
+nombornya tak akan tak selaras.
+
+Skrip ini **menanya frasa laluan kunci tandatangan**, jadi ia tidak boleh
+dijalankan tanpa tuan hadir. Ia juga membatalkan binaan kalau pengesah
+Python tidak bersetuju dengan openssl, atau kalau kunci dalam `pasang.sh`
+tidak sama dengan kunci dalam app.
 
 Kemudian hidupkan pelayan:
 
@@ -415,10 +421,75 @@ Kemudian hidupkan pelayan:
 cd ~/serve-zakat && python3 -m http.server 8000 --bind 0.0.0.0 --directory .
 ```
 
-> **Amaran keselamatan.** Tiada pengesahan tandatangan. Sesiapa yang boleh
-> mengawal pelayan itu boleh menghantar apa-apa kod, dan telefon akan
-> menjalankannya. Untuk pelayan dalam rangkaian sendiri ini memadai. Kalau
-> ia diletak di internet, ini lubang sebenar dan perlu difikir semula.
+#### Kunci tandatangan
+
+Arkib kemas kini mesti ditandatangani, atau telefon akan menolaknya. Kunci
+rawak dijana sekali sahaja:
+
+```bash
+cd ~/taksiran
+python3 alat/tanda.py jana
+```
+
+Ia menanya frasa laluan (openssl yang menanya, jadi frasa itu tidak pernah
+melalui argumen) dan menyimpan kunci rahsia di `~/.taksiran-kunci/kunci.pem`.
+openssl menanya **tiga kali** — dua kali untuk menetapkan frasa, sekali lagi
+untuk membaca kunci awam. Itu memang sepatutnya; kunci rahsia tidak pernah
+wujud dalam bentuk tidak bersulit, walaupun seketika.
+Kunci awamnya disimpan di sebelahnya dalam fail biasa — ia memang maklumat
+awam, dan menyimpannya begini bermakna `bina.sh` menanya frasa laluan
+**sekali** sahaja, bukan bagi setiap arahan.
+
+Ia kemudian mencetak baris untuk ditampal ke dalam `KUNCI` di
+`zakat/tandatangan.py`. Satu lagi arahan mencetak PEM untuk `pasang.sh`:
+
+```bash
+python3 alat/tanda.py pem     # tampal output ini ke dalam pasang.sh
+```
+
+Untuk memastikan kedua-duanya benar-benar padan — app dan `pasang.sh`:
+
+```bash
+python3 alat/tanda.py padan ~/serve-zakat/pasang.sh
+```
+
+`bina.sh` menjalankan pemeriksaan itu sendiri pada setiap binaan, dan
+membatalkan binaan kalau kuncinya menyimpang. Sebabnya: kalau ia menyimpang,
+arkib yang **sah** akan ditolak pada pemasangan pertama — iaitu kepada orang
+yang belum ada app untuk membetulkannya.
+
+> **Simpan frasa laluan itu.** Kalau ia hilang, kunci itu hilang, dan kunci
+> baharu hanya boleh sampai ke telefon melalui kemas kini yang
+> ditandatangani oleh kunci **lama**. Itu lingkaran mati. `KUNCI` ialah
+> senarai supaya putaran kunci mungkin — tambah kunci baharu, terbitkan,
+> kemudian buang yang lama — tetapi itu mesti dirancang **sebelum** kunci
+> lama hilang, bukan selepas.
+
+**Folder `alat/` tidak pernah dihantar ke telefon.** Ia memegang kod
+menandatangani; sesiapa yang membongkar app itu boleh menggunakannya untuk
+menandatangani arkib sendiri. `bina.sh` memeriksa pengecualian itu
+benar-benar berlaku pada setiap binaan, dan membatalkan binaan kalau tidak.
+
+#### Kalau kemas kini ditolak
+
+Skrin kegagalan memaparkan cap jari kunci yang app itu percaya. Bandingkan
+dengan `python3 alat/tanda.py cap`. Kalau ia berbeza, arkib itu ditandatangani
+dengan kunci lain. Kalau ia sama, arkib itu memang rosak atau diubah.
+
+Untuk memeriksa dengan tangan, tanpa app:
+
+```bash
+cd ~/serve-zakat
+python3 ~/taksiran/alat/tanda.py sahkan taksiran.tar.gz
+```
+
+**Had yang mesti diketahui.** Pemeriksaan tandatangan melindungi daripada
+**arkib yang ditukar**. Ia tidak melindungi daripada pelayan yang diceroboh
+sepenuhnya semasa **pemasangan pertama**, kerana pada masa itu `pasang.sh`
+sendiri datang dari pelayan yang sama — penyerang boleh menukar kedua-duanya
+sekali gus. Sehingga `pasang.sh` dihoskan di tempat lain, perlindungan itu
+hanya separa. Kunci tandatangan juga satu titik kegagalan: kalau ia dicuri
+bersama frasa laluannya, penyerang boleh menandatangani kod.
 
 ### Eksport data — `Tetapan ▸ [5]`
 

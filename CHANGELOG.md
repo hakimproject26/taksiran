@@ -12,6 +12,90 @@ Ukurannya bukan berapa banyak kerja, tapi berapa besar kesannya pada pengguna.
 
 ---
 
+## [3.0.0] — 19/09/2026
+
+Setiap kemas kini kini ditandatangani dan diperiksa sebelum dipasang.
+
+**Sebab versi ini MAJOR:** selepas app ini dipasang, pelayan yang tidak
+menandatangani arkibnya **tidak berfungsi lagi**. Kemas kini akan ditolak.
+Itu perubahan cara kerja, bukan sekadar tambahan.
+
+**Ditambah:**
+
+- **Tandatangan Ed25519.** Arkib kemas kini mesti ditandatangani dengan
+  kunci rahsia tuan. App memegang kunci awam, jadi ia boleh mengesahkan
+  tetapi tidak boleh mencipta tandatangan. Kunci rahsia tidak pernah
+  sampai ke telefon
+- **`zakat/tandatangan.py`** — pengesah Ed25519, pustaka standard sahaja.
+  Ditulis dengan tangan kerana pustaka standard Python tiada kripto kunci
+  awam, dan projek ini sengaja tiada `pip install`
+- **`alat/tanda.py`** — alat menandatangani untuk tuan. Folder `alat/`
+  **sengaja tidak dihantar**; `bina.sh` memeriksa pengecualian itu berlaku
+  pada setiap binaan
+- **`pasang.sh` memeriksa tandatangan juga** — jadi pemasangan pertama pun
+  tidak boleh dipalsukan oleh tarball yang ditukar
+- Cap jari kunci dipaparkan pada skrin `Tetapan` dan pada skrin kemas kini
+  yang gagal, supaya sauh kepercayaan itu kelihatan, bukan tersembunyi
+- Kunci awam dieksport bersama data — maklumat awam, berguna semasa
+  menyiasat kenapa sesuatu kemas kini ditolak
+
+**Keselamatan — tiga lubang yang ditutup sekali gus:**
+
+- **Suntikan ANSI melalui `versi.json`.** Medan `nota` dicetak pada
+  **setiap kali app dibuka**, sebelum sebarang pengesahan berjalan. Pelayan
+  yang diceroboh boleh letak `\x1b[2J` di situ dan melukis semula skrin —
+  memalsukan "✓ tandatangan sah" atau menyembunyikan penolakan. Aksara
+  kawalan kini dibuang, dan nombor versi mesti padan `^\d+(\.\d+){0,2}$`
+- **Muat turun tanpa had saiz.** Pengesahan berlaku **selepas** muat turun,
+  jadi pelayan yang diceroboh boleh menghantar strim tanpa penghujung dan
+  menghabiskan memori telefon sebelum sebarang kripto berjalan. Had kini
+  20 MB, diperiksa daripada `Content-Length` dan semasa membaca
+- **Turutan diperiksa dahulu, struktur kemudian.** Membaca senarai nama
+  arkib memaksa seluruh gzip dinyahmampat, jadi arkib bom akan meletup
+  sebelum apa-apa disahkan kalau turutannya terbalik. Kedua-duanya diletak
+  dalam satu fungsi supaya invarian itu tidak boleh dipisahkan
+
+**Diubah:**
+
+- **Arkib lama tidak boleh dipasang.** Setiap arkib mesti ada fail
+  `taksiran.tar.gz.sig` di sebelahnya. Pelayan yang tidak menyediakannya
+  akan ditolak dengan ayat yang menyatakan sebabnya
+- **`bina.sh` tidak lagi boleh dijalankan tanpa tuan hadir.** Ia menanya
+  frasa laluan kunci, dan kini menghasilkan **tiga** fail, bukan dua
+- **`bina.sh` menerbitkan secara atomik** dan menulis `versi.json`
+  **terakhir**. Binaan yang mati di tengah jalan meninggalkan set fail lama
+  yang lengkap, bukan tarball yang tiada siapa boleh pasang
+- **Kegagalan separa dikatakan sejujurnya.** Dulu skrin gagal mencetak
+  "Tiada apa-apa diubah" walaupun `_ekstrak()` mati separuh jalan. Sekarang
+  ia memberitahu bahawa sebahagian fail sudah ditulis, dan salinan lama ada
+  dalam `.backup/`
+- **Pengawal turun-versi.** Arkib yang lebih lama daripada versi yang sudah
+  dipasang ditolak
+
+**Tidak berubah:**
+
+- Tiada perubahan pada kiraan, nisab, atau data tuan. Fail `data/` tidak
+  pernah disentuh oleh kemas kini, dahulu mahupun sekarang
+- Tiada **suis** untuk mematikan pengesahan. Suis mati ialah laluan pintas,
+  dan laluan pintas menjadikan ciri ini hiasan
+
+**Had yang mesti diketahui:**
+
+- **Kunci tandatangan ialah satu titik kegagalan.** Kalau ia dicuri bersama
+  frasa laluannya, penyerang boleh menandatangani kod
+- **Kunci tidak boleh dipulihkan kalau frasa laluan hilang.** Sebab itu
+  `KUNCI` ialah senarai, bukan satu kunci — putaran kunci mungkin, tetapi
+  memerlukan satu terbitan terakhir yang ditandatangani kunci lama
+- **Tetingkap buta sekali sahaja.** Versi 2.x yang sedang berjalan tiada
+  pengesah, jadi arkib pertama yang membawa `tandatangan.py` dihantar
+  melalui saluran yang belum disahkan
+- **90 baris kripto tulisan tangan ialah risiko terdekat.** Itulah sebabnya
+  `bina.sh` menjalankan pengesah Python terhadap setiap arkib yang baru
+  ditandatangani, dan membatalkan binaan kalau ia tidak bersetuju dengan
+  openssl
+
+---
+
 ## [2.0.2] — 18/09/2026
 
 Cetakan qadha: angka tepat sampai sen, dan setiap tahun berdiri sendiri.

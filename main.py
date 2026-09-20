@@ -8,7 +8,8 @@ import threading
 from datetime import date, datetime
 from decimal import Decimal
 
-from zakat import cetak, eksport, kemas, nisab, qadha, readme, store, ui, versi
+from zakat import (cetak, eksport, kemas, nisab, qadha, readme, store,
+                   tandatangan, ui, versi)
 from zakat.kira import Hasil, Tolakan, kira_kaedah_a, kira_kaedah_b
 
 LEBAR = 52
@@ -16,6 +17,11 @@ DALAM = LEBAR - 4  # lebar teks di dalam kotak
 
 # Hasil semakan kemas kini semasa app dibuka. None = belum selesai.
 _KEMAS = None
+
+# Mesej yang bermakna "arkib ini gagal pengesahan", berbanding kegagalan
+# rangkaian. Perbezaannya penting pada skrin: kegagalan tandatangan ialah
+# keputusan muktamad, jadi memberitahu pengguna "cuba lagi" adalah menyesatkan.
+_MESEJ_TANDA = (tandatangan.TIADA, tandatangan.ROSAK, tandatangan.TAK_PADAN)
 
 
 # ---------------------------------------------------------------- utiliti
@@ -1208,6 +1214,11 @@ def menu_tetapan():
             "",
             ui.baris_kv("Semak kemas kini",
                         "Ya" if cfg.get("semak_kemas", True) else "Tidak", DALAM),
+            "",
+            # Kunci yang app ini percaya. Tanpa baris ini ciri keselamatan
+            # itu halimunan sepenuhnya — pengguna tiada cara mengaudit apa
+            # yang sebenarnya melindunginya.
+            ui.baris_kv("Kunci kemas kini", tandatangan.cap_jari(), DALAM),
         ], LEBAR))
         print()
         print("  [1]  Pilih gaya output print")
@@ -1637,7 +1648,7 @@ def skrin_kemas(cfg):
             print("  " + b)
         print()
 
-    ok, mesej = kemas.pasang(sumber, hasil["versi"], lapor)
+    ok, mesej, berubah = kemas.pasang(sumber, hasil["versi"], lapor)
 
     kepala()
     if not ok:
@@ -1645,9 +1656,29 @@ def skrin_kemas(cfg):
         print()
         print("  " + mesej)
         print()
-        print(ui.warna("  Tiada apa-apa diubah — app masih versi lama.",
-                       ui.W.HIJAU))
+        if berubah:
+            # Pengekstrakan sudah bermula, jadi kod lama mungkin separuh
+            # tertimpa. Mengaku "tiada apa-apa diubah" di sini adalah
+            # pembohongan yang menenangkan pada saat paling salah.
+            print(ui.warna(
+                f"  Salinan kod lama ada dalam "
+                f"{os.path.basename(kemas.DIR_SALINAN)}/ — jangan guna app ini",
+                ui.W.MERAH))
+            print(ui.warna(
+                "  sehingga ia dipasang semula.", ui.W.MERAH))
+        else:
+            print(ui.warna("  Tiada apa-apa diubah — app masih versi lama.",
+                           ui.W.HIJAU))
         print()
+        # Kegagalan tandatangan ialah keputusan, bukan kemalangan: arkib itu
+        # tidak akan berubah menjadi sah pada percubaan seterusnya. Sebut
+        # cap jari supaya tuan boleh mengesahkannya sendiri.
+        if mesej in _MESEJ_TANDA:
+            print(ui.warna(f"  Kunci yang app ini percaya: "
+                           f"{tandatangan.cap_jari()}", ui.W.MALAP))
+            print(ui.warna("  Cuba lagi tidak akan menolong — arkib itu "
+                           "memang bukan daripada tuan.", ui.W.MALAP))
+            print()
         ui.jeda()
         return
 
