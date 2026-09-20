@@ -102,17 +102,32 @@ fi
 # ditulis-terakhir yang dahulu dipakai pada pelayan fail.
 echo
 echo "  ── Mencipta release draf ──"
+
+# NOTA dikira DAHULU, bukan di dalam heredoc.
+#
+# `versi.NOTA` ialah senarai baris — app mencetaknya satu baris satu entri
+# (lihat `kemas.py`, `"nota": [_bersih(n) for n in ...]`). `print(versi.NOTA)`
+# akan menulis repr Python ke nota release, iaitu `['baris satu', 'baris dua']`.
+# Dan di dalam heredoc, status keluar penggantian arahan itu tidak diperiksa,
+# jadi kegagalan menghasilkan nota KOSONG sementara release tetap naik.
+NOTA="$(python3 -c "
+import sys
+sys.path.insert(0, '$AKAR')
+from zakat import versi
+print('\n'.join(versi.NOTA))")"
+
+if [ -z "$NOTA" ]; then
+    echo "Ralat: nota release kosong — versi.NOTA tiada atau tidak boleh dibaca." >&2
+    exit 1
+fi
+
 gh release create "$TAG" \
     --repo "$REPO" \
     --draft \
     --verify-tag \
     --title "$TAG" \
     --notes-file - <<NOTA
-$(python3 -c "
-import sys
-sys.path.insert(0, '$AKAR')
-from zakat import versi
-print(versi.NOTA)")
+$NOTA
 NOTA
 
 echo "  → menaikkan aset …"
