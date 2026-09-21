@@ -1,7 +1,9 @@
 # taksiran (zakat)
 
 App kiraan zakat untuk telefon. TUI terminal, stdlib Python sahaja.
-Rangka pembinaan: @~/HKM/HKMSTYLE.md
+
+- Gaya pembinaan: @~/HKM/HKMSTYLE.md
+- Inventori + had Aether: @~/HKM/EKOSISTEM.md
 
 ## Data
 
