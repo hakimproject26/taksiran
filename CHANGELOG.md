@@ -12,6 +12,74 @@ Ukurannya bukan berapa banyak kerja, tapi berapa besar kesannya pada pengguna.
 
 ---
 
+## [3.1.2] — 22/09/2026
+
+Clipboard berfungsi semula, dan kegagalannya kini menyebut puncanya.
+
+**Sebab versi ini PATCH:** tiada keupayaan baharu dan tiada cara guna yang
+berubah. Dua pepijat dibaiki — satu daripadanya mematikan clipboard
+sepenuhnya sejak app mula dibuka melalui Aether — dan satu mesej yang
+mengelirukan dipecahkan. Tuan tidak perlu belajar apa-apa yang baharu.
+
+**Dibaiki:**
+
+- **Clipboard mati sejak app dibuka melalui Aether.** Aether membina
+  persekitaran anak daripada senarai putih, dan senarai itu tiada pemboleh
+  ubah runtime Android — `BOOTCLASSPATH`, `DEX2OATBOOTCLASSPATH`,
+  `ANDROID_ART_ROOT`, `ANDROID_I18N_ROOT`, `ANDROID_TZDATA_ROOT`,
+  `ANDROID_STORAGE`. Kesannya berantai: `termux-api` menjalankan
+  `$PREFIX/bin/am`, `am` menjalankan `app_process`, dan `app_process`
+  memerlukan set itu untuk menghidupkan runtime. Tanpanya `am` mati, jadi
+  `termux-clipboard-set` gagal setiap kali — walaupun binari itu wujud dan
+  pakej `termux-api` dipasang. Dilancarkan terus dari shell ia berfungsi,
+  kerana shell mewarisi set itu daripada proses Termux. Itu menerangkan
+  kenapa pepijat ini hanya muncul selepas Aether mengambil alih alias, dan
+  kenapa memasang app Termux:API tidak menolong: CLI tidak pernah sampai
+  kepadanya
+- **Mesej clipboard menyalahkan benda yang salah.** Tiga punca berbeza —
+  pakej tiada, app Termux:API tidak menjawab, dan arahan menggantung —
+  semuanya menghasilkan satu ayat: "clipboard tak tersedia". Clipboard
+  telefon tidak pernah tidak tersedia; yang tiada ialah jambatan ke
+  Android. Tuan yang membaca ayat itu akan memeriksa clipboard, sedangkan
+  pembetulannya di tempat lain. Kini setiap punca menyebut dirinya sendiri,
+  beserta langkah seterusnya
+- **Skrin Eksport gagal dalam senyap.** Apabila fail eksport berjaya ditulis
+  tetapi salinannya ke clipboard gagal, tiada apa-apa dicetak langsung —
+  sedangkan laluan lain pada skrin yang sama memberitahu. Kini kedua-duanya
+  memberitahu
+- **Dua salinan kod clipboard digabungkan.** `ui.salin_teks` dan
+  `eksport.salin_ke_clipboard` melakukan benda yang sama dengan nilai masa
+  tamat yang berbeza (5 dan 10 saat). Dua tempat yang tahu benda yang sama
+  boleh menyimpang, dan yang kedua sudah menyimpang. Ia dibuang
+
+**Tidak berubah:**
+
+- Tandatangan Ed25519, dan tiada **suis** untuk mematikan pengesahan
+- Senarai putih Aether masih membuang `PYTHONPATH`, `LD_PRELOAD`, dan
+  `PYTHONSTARTUP` — iaitu perlindungan yang ia wujud untuknya. Yang
+  ditambah hanya pemboleh ubah Android, yang tidak dibaca oleh Python
+  langsung
+- Tiada perubahan pada kiraan, nisab, atau data tuan
+
+**Had yang mesti diketahui:**
+
+- **Aether membina persekitaran anak daripada senarai putih, bukan
+  warisan.** Apa sahaja yang tiada dalam senarai itu tidak sampai kepada
+  app. Ini ciri keselamatan, bukan pepijat — tetapi ia bermakna ciri yang
+  bergantung pada arahan luar boleh mati **tanpa amaran**, kerana kegagalan
+  arahan luar kelihatan sama seperti arahan itu memang tiada. Kalau sesuatu
+  gagal hanya apabila app dibuka melalui Aether, dan berjaya apabila
+  dijalankan terus dari shell, ini tempat pertama yang patut diperiksa
+- **Ujian tidak menangkapnya, dan masih tidak akan.** Mesin bina bukan
+  Android, jadi pemboleh ubah runtime itu memang tiada di sana — senarai
+  putih yang salah kelihatan betul pada setiap larian. Ujian 12 dalam
+  `~/HKM/aether/ujian/skenario.sh` menguji senarai putih, tetapi ia hanya
+  menegaskan apa yang **dibuang**, bukan apa yang perlu **kekal**. Ujian
+  yang memeriksa satu arah sahaja tidak boleh menemui kegagalan arah yang
+  satu lagi
+
+---
+
 ## [3.1.1] — 20/09/2026
 
 Kemas kini datang dari GitHub, bukan dari komputer sendiri.

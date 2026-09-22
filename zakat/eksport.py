@@ -10,7 +10,6 @@ sahkan isinya sendiri tanpa alat lain.
 """
 
 import os
-import subprocess
 from datetime import datetime
 
 from . import cetak, nisab, qadha, tandatangan, versi
@@ -228,17 +227,3 @@ def tulis(teks, laluan=None):
         return laluan, None
     except OSError as e:
         return laluan, str(e)
-
-
-def salin_ke_clipboard(teks):
-    """Cuba salin ke clipboard Termux. Pulang True kalau berjaya."""
-    import shutil
-
-    if not shutil.which("termux-clipboard-set"):
-        return False
-    try:
-        p = subprocess.run(["termux-clipboard-set"],
-                           input=teks.encode("utf-8"), timeout=10)
-        return p.returncode == 0
-    except Exception:  # noqa: BLE001
-        return False

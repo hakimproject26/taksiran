@@ -1361,10 +1361,13 @@ def _papar_teks(teks, nota=None):
     print()
     print(teks)
     print()
-    if ui.salin_teks(teks):
+    berjaya, sebab, cadangan = ui.salin_teks(teks)
+    if berjaya:
         print(ui.warna("  ✓ disalin ke clipboard", ui.W.HIJAU))
     else:
-        print(ui.warna("  (clipboard tak tersedia — pilih dan salin manual)", ui.W.MALAP))
+        print(ui.warna(f"  ! {sebab}", ui.W.KUNING))
+        print(ui.warna(f"    {cadangan}", ui.W.MALAP))
+        print(ui.warna("    Pilih dan salin manual.", ui.W.MALAP))
     if nota:
         print(ui.warna(f"  ✓ {nota}", ui.W.HIJAU))
     print()
@@ -1502,10 +1505,12 @@ def skrin_eksport():
         print()
         print(ui.warna("  Cuba salin ke clipboard pula …", ui.W.MALAP))
         print()
-        if eksport.salin_ke_clipboard(teks):
+        berjaya, sebab, cadangan = ui.salin_teks(teks)
+        if berjaya:
             print(ui.warna("  ✓ disalin ke clipboard", ui.W.HIJAU))
         else:
-            print(ui.warna("  ✗ clipboard pun tak tersedia", ui.W.MERAH))
+            print(ui.warna(f"  ✗ {sebab}", ui.W.MERAH))
+            print(ui.warna(f"    {cadangan}", ui.W.MALAP))
         print()
         ui.jeda()
         return
@@ -1517,9 +1522,13 @@ def skrin_eksport():
     print(f"  {len(teks.splitlines())} baris, {len(teks) / 1024:.1f} KB")
     print()
 
-    if eksport.salin_ke_clipboard(teks):
+    berjaya, sebab, cadangan = ui.salin_teks(teks)
+    if berjaya:
         print(ui.warna("  ✓ salinannya juga ada dalam clipboard", ui.W.HIJAU))
         print(ui.warna("    (boleh tampal ke e-mel atau nota)", ui.W.MALAP))
+    else:
+        print(ui.warna(f"  ! {sebab}", ui.W.MALAP))
+        print(ui.warna(f"    {cadangan}", ui.W.MALAP))
     print()
     print(ui.warna("  Untuk lihat isinya:", ui.W.MALAP))
     print(ui.warna(f"    cat {laluan}", ui.W.MALAP))

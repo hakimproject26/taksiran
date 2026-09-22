@@ -8,8 +8,8 @@
 #
 #   1. sunting zakat/versi.py  (NOMBOR, TARIKH, NOTA)
 #   2. sunting CHANGELOG.md
-#   3. git commit -am "v3.1.1 — ..."
-#   4. git tag v3.1.1 && git push && git push --tags
+#   3. git commit -am "v<NOMBOR> — ..."      (NOMBOR dari zakat/versi.py)
+#   4. git tag v<NOMBOR> && git push && git push --tags
 #   5. bash alat/lepas.sh
 #
 # Skrip ini mengesahkan langkah 3 dan 4 sudah berlaku, kemudian menerbitkan.

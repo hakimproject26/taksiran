@@ -169,16 +169,40 @@ def jeda(mesej="  [ENTER] teruskan"):
         print()
 
 
+# Berapa lama kita tunggu `termux-clipboard-set`. Ia bercakap dengan app
+# Android melalui soket, jadi app yang tidak bertindak balas akan
+# menggantung. Tanpa had, app kita yang menggantung.
+MASA_TAMAT_SALIN = 5
+
+
 def salin_teks(teks):
-    """Cuba salin ke clipboard Termux. Pulang True kalau berjaya."""
+    """Salin ke clipboard Termux.
+
+    Pulang (berjaya, sebab, cadangan). `sebab` dan `cadangan` ialah None
+    kalau berjaya, dan pemanggil MESTI memaparkan `sebab` apabila gagal.
+
+    Tiga kegagalan di bawah kelihatan sama dari luar — ketiga-tiganya
+    bermakna "tak disalin" — tetapi puncanya berbeza dan pembetulannya
+    berbeza. Digabungkan menjadi satu ayat, tuan akan cuba membetulkan
+    benda yang salah: dia akan memeriksa clipboard, sedangkan yang tiada
+    ialah jambatan ke Android.
+    """
     if not shutil.which("termux-clipboard-set"):
-        return False
+        return False, "termux-api tidak dipasang", "pkg install termux-api"
     try:
         p = subprocess.run(
             ["termux-clipboard-set"],
             input=teks.encode("utf-8"),
-            timeout=5,
+            timeout=MASA_TAMAT_SALIN,
         )
-        return p.returncode == 0
-    except Exception:
-        return False
+    except subprocess.TimeoutExpired:
+        return (False,
+                f"termux-api menggantung ({MASA_TAMAT_SALIN}s)",
+                "cuba lagi")
+    except OSError:
+        return False, "termux-clipboard-set gagal", "cuba lagi"
+    if p.returncode != 0:
+        return (False,
+                "app Termux:API tidak menjawab",
+                "semak app Termux:API")
+    return True, None, None
