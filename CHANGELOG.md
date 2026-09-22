@@ -12,9 +12,65 @@ Ukurannya bukan berapa banyak kerja, tapi berapa besar kesannya pada pengguna.
 
 ---
 
+## [3.1.3] — 22/09/2026
+
+Aether tidak lagi membina persekitaran app daripada senarai putih.
+
+**Sebab versi ini PATCH:** tiada keupayaan baharu dan tiada cara guna yang
+berubah. Satu pepijat dibaiki — clipboard, yang 3.1.2 cuba baiki dan
+**gagal**. Tuan tidak perlu belajar apa-apa yang baharu.
+
+**Dibaiki:**
+
+- **Senarai putih Aether yang membunuh clipboard.** 3.1.2 menambah enam
+  pemboleh ubah runtime Android ke dalam senarai putih, dan clipboard masih
+  gagal di telefon. Sebabnya bukan pemboleh ubah tertentu yang tertinggal:
+  ia senarai putih itu sendiri. Senarai putih ialah tekaan tentang apa yang
+  anak perlukan, dan tekaan itu tidak boleh selesai — setiap kemas kini
+  Termux boleh menambah satu lagi yang kita tidak tahu. `_alamat_anak()`
+  kini mewarisi persekitaran ibu dan membuang hanya yang kita **tahu**
+  beracun: `PYTHONPATH`, `PYTHONSTARTUP`, `PYTHONHOME`, `LD_PRELOAD`,
+  `LD_AUDIT`, `BASH_ENV`, `ENV`
+- **Ujian 12 hanya menguji satu arah.** Ia menegaskan apa yang **dibuang**
+  dari persekitaran anak, tidak pernah apa yang mesti **sampai**. Sebab itu
+  ia lulus sepanjang masa pepijat clipboard hidup. Ia kini menguji
+  kedua-duanya, supaya arah ini tidak terbalik semula tanpa disedari
+
+**Kosnya — ditulis di sini, bukan disimpan dalam kepala:**
+
+- Sauh kepercayaan itu kini **gagal terbuka**. Pemboleh ubah beracun yang
+  belum kita namakan akan sampai kepada app; sebelum ini ia ditahan. Kita
+  menukar sifat itu dengan ciri yang benar-benar berfungsi
+- `LD_LIBRARY_PATH` sengaja dibiarkan lalu. Ia laluan penyelesaian pustaka,
+  bukan suntikan, dan ia calon paling mungkin yang Android perlukan
+
+**Tidak berubah:**
+
+- Aether masih pelancar. Yang berubah hanya cara ia membina persekitaran
+  anak — pengesahan MANIFEST setiap kali dibuka, penolakan fail asing,
+  `--baiki`, tripwire, dan log alert semuanya kekal
+- Tandatangan Ed25519, dan tiada **suis** untuk mematikan pengesahan
+- Tiada perubahan pada kiraan, nisab, atau data tuan
+
+**Had yang mesti diketahui:**
+
+- **Mesin bina bukan Android.** Tiada ujian di sini boleh membuktikan
+  clipboard berfungsi; hanya telefon boleh. Ujian yang ada mengesahkan
+  bentuk persekitaran, bukan kesannya pada `termux-api`
+- **Gagal terbuka ialah pilihan, bukan kemalangan.** Kalau kita menemui
+  vektor persekitaran baharu yang serius, ia mesti ditambah ke senarai buang
+  dengan tangan — tiada apa-apa yang akan menangkapnya secara automatik
+
+---
+
 ## [3.1.2] — 22/09/2026
 
 Clipboard berfungsi semula, dan kegagalannya kini menyebut puncanya.
+
+> **Pembetulan, ditambah 22/09/2026 bersama 3.1.3:** punca yang dinyatakan
+> di bawah **salah**. Menambah enam pemboleh ubah Android tidak memulihkan
+> clipboard — 3.1.2 gagal di telefon. Yang salah bukan senarai nama itu,
+> tetapi senarai putih itu sendiri sebagai kaedah. Lihat 3.1.3.
 
 **Sebab versi ini PATCH:** tiada keupayaan baharu dan tiada cara guna yang
 berubah. Dua pepijat dibaiki — satu daripadanya mematikan clipboard

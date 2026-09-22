@@ -13,20 +13,20 @@ pengguna. Buang satu feature = MAJOR, walaupun kerjanya sepuluh minit.
 Setiap kali nombor ini naik, catat sebabnya dalam CHANGELOG.md.
 """
 
-NOMBOR = "3.1.2"
+NOMBOR = "3.1.3"
 TARIKH = "22/09/2026"
 
 # Apa yang berubah pada versi SEMASA. Dipaparkan pada skrin Kemas Kini,
 # dan dihantar ke app lain melalui versi.json di pelayan.
 # Sejarah penuh ada dalam CHANGELOG.md.
 NOTA = [
-    "Clipboard berfungsi semula. Ia mati setiap kali app dibuka",
-    "melalui Aether, kerana Aether membuang pemboleh ubah Android",
-    "yang termux-api perlukan — dilancarkan terus dari shell ia",
-    "berfungsi, dan itu sebabnya ia hanya muncul selepas Aether",
-    "mengambil alih alias",
-    "Bila salinan gagal, app kini menyebut puncanya, bukan",
-    "menyalahkan clipboard",
+    "Aether tidak lagi membina persekitaran app daripada senarai",
+    "putih. Ia kini membuang hanya pemboleh ubah beracun, dan",
+    "membiarkan selebihnya lalu. Clipboard pulih: termux-api",
+    "perlukan pemboleh ubah runtime Android yang senarai putih",
+    "tiada — sebab itu ia hidup di shell, mati melalui Aether",
+    "Kosnya: kini ia gagal terbuka. Pemboleh ubah beracun yang",
+    "belum kita namakan akan sampai kepada app. Dulu ia ditahan",
 ]
 
 
